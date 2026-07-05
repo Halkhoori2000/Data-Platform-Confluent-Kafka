@@ -457,11 +457,11 @@ rect(bgLayer, -2000, -1500, 14000, 9000, "url(#dots)", null, 0);
   let px = 140;
   const pg = lodGroup(world, 0, 2.1);
   for (const p of DATA.pillars){
-    const w = p.length * 12.5 + 56;
-    rect(pg, px, 268, w, 46, BASE, BORDER, 23);
-    el("circle", { cx: px + 24, cy: 291, r: 5, fill: "#58a6ff" }, pg);
-    txt(pg, px + 40, 298, p, 19, MUT);
-    px += w + 16;
+    const w = p.length * 14 + 62;
+    rect(pg, px, 264, w, 52, BASE, BORDER, 26);
+    el("circle", { cx: px + 26, cy: 290, r: 6, fill: "#58a6ff" }, pg);
+    txt(pg, px + 44, 298, p, 22, MUT);
+    px += w + 18;
   }
 }
 
@@ -739,6 +739,20 @@ function deepSpark(parent, x, y, w, Z){
   });
 }
 
+/* stat pills (drawn later once worldW is known) */
+function drawStats(worldW){
+  const stats = [["i-map","30+ explorable components"],["i-layers","4 zoom levels · L0 → L4"],["i-burst","3 live internals demos"],["i-stream","streaming + batch + files"]];
+  let sx = worldW - 140;
+  for (let i = stats.length - 1; i >= 0; i--){
+    const s = stats[i];
+    const w = s[1].length * 14 + 92;
+    sx -= w + 24;
+    rect(world, sx, 96, w, 62, "rgba(19,25,36,0.85)", BORDER, 31);
+    iconChip(world, sx + 32, 127, 15, s[0], "#79c0ff");
+    txt(world, sx + 56, 136, s[1], 26, MUT, { w:"600" });
+  }
+}
+
 /* draw the five columns */
 const colBottoms = [];
 DATA.columns.forEach((col, ci) => {
@@ -799,8 +813,9 @@ const maxColBottom = Math.max(...colBottoms) + 40;
   let fx = 140;
   DATA.columns.forEach((col, ci) => {
     const Z = ZONES[col.id];
-    el("ellipse", { cx: fx - 34 + COLW/2, cy: COLTOP + 500, rx: COLW*0.75, ry: 900, fill: "url(#glow-" + col.id + ")" }, bgLayer);
-    const frame = rect(bgLayer, fx - 34, COLTOP - 10, COLW, maxColBottom - COLTOP + 60, blend(Z.acc, BG, 0.028), blend(Z.acc, BORDER, 0.28), 20, { filter:"url(#sh)" });
+    const colH = colBottoms[ci] - COLTOP + 60;
+    el("ellipse", { cx: fx - 34 + COLW/2, cy: COLTOP + colH*0.45, rx: COLW*0.75, ry: colH*0.6, fill: "url(#glow-" + col.id + ")" }, bgLayer);
+    const frame = rect(bgLayer, fx - 34, COLTOP - 10, COLW, colH, blend(Z.acc, BG, 0.028), blend(Z.acc, BORDER, 0.28), 20, { filter:"url(#sh)" });
     /* banner */
     rect(bgLayer, fx - 34, COLTOP - 10, COLW, 92, "url(#grb-" + col.id + ")", "none", 20);
     rect(bgLayer, fx - 34, COLTOP + 58, COLW, 24, "url(#grb-" + col.id + ")", "none", 0);
@@ -816,15 +831,17 @@ const maxColBottom = Math.max(...colBottoms) + 40;
       const p = el("path", { d:`M${x1+6} ${ym} h${GUTTER*0.28} q10 0 10 -10 v-14 q0 -10 10 -10 h${GUTTER*0.18} q10 0 10 10 v14 q0 10 10 10 h${GUTTER*0.16}`,
         stroke: blend(Z.acc, "#ffffff", 0.42), "stroke-width":5, fill:"none", "marker-end":"url(#arr)" }, bgLayer);
       p.classList.add("flowline");
-      const lw = 118;
-      rect(bgLayer, x1 + GUTTER/2 - lw/2, ym - 64, lw, 30, "rgba(10,14,20,0.85)", blend(Z.acc, BORDER, 0.4), 15);
-      txt(bgLayer, x1 + GUTTER/2, ym - 43, FLOWS[ci], 15, blend(Z.acc, "#ffffff", 0.75), { anchor:"middle", w:"700" });
+      const lw = 156;
+      rect(bgLayer, x1 + GUTTER/2 - lw/2, ym - 76, lw, 40, "rgba(10,14,20,0.88)", blend(Z.acc, BORDER, 0.45), 20);
+      txt(bgLayer, x1 + GUTTER/2, ym - 49, FLOWS[ci], 20, blend(Z.acc, "#ffffff", 0.8), { anchor:"middle", w:"700" });
     }
     fx += COLW + GUTTER;
   });
   const mk = el("marker", { id:"arr", viewBox:"0 0 10 10", refX:8, refY:5, markerWidth:5, markerHeight:5, orient:"auto-start-reverse" }, defs);
   el("path", { d:"M0 0L10 5L0 10z", fill:"#9fb6d4" }, mk);
 }
+
+drawStats(worldW);
 
 /* rails */
 let railY = maxColBottom + 120;
