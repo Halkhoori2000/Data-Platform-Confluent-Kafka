@@ -3,1127 +3,710 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Enterprise Banking Data Platform — an explorable map</title>
+<title>Enterprise Banking Data Platform — explorable architecture</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  :root { --bg:#0a0e14; --surface:#131924; --border:#2b3444; --text:#e6edf3; --muted:#93a1b3; --dim:#4d5a6e; }
+  :root { --bg:#0b0f16; --surface:#141a26; --border:#2b3444; --text:#e6edf3; --muted:#9db1c7; --dim:#5a6a82;
+          --blue:#58a6ff; --green:#3fb950; --orange:#f0883e; --purple:#a371f7; --teal:#2dd4bf; --red:#f47067; --gold:#eac54f; }
   html, body { height: 100%; }
   body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; flex-direction: column; overflow: hidden; }
-  header { background: rgba(19,25,36,0.9); border-bottom: 1px solid var(--border); padding: 12px 22px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; z-index: 10; }
-  header h1 { font-size: 1.05rem; font-weight: 650; letter-spacing: 0.01em; }
-  header .subtitle { font-size: 0.75rem; color: var(--muted); }
-  .btn { padding: 6px 14px; border-radius: 7px; font-size: 0.8rem; border: 1px solid var(--border); background: #1c2433; color: var(--text); text-decoration: none; cursor: pointer; font-family: inherit; }
-  .disclosure { background: linear-gradient(90deg, rgba(137,87,229,0.10), rgba(31,111,235,0.10)); border-bottom: 1px solid #322a52; padding: 5px 22px; font-size: 0.72rem; color: #c8b1f5; text-align: center; z-index: 10; }
-  #map-wrap { flex: 1; position: relative; overflow: hidden; cursor: grab; background: radial-gradient(1200px 700px at 60% -10%, #101a2e 0%, #0a0e14 55%); }
-  #map-wrap.dragging { cursor: grabbing; }
-  svg { display: block; width: 100%; height: 100%; user-select: none; -webkit-user-select: none; }
-  .hud { position: absolute; z-index: 20; display: flex; gap: 8px; align-items: center; }
-  .hud.tl { top: 12px; left: 14px; } .hud.tr { top: 12px; right: 14px; }
-  .hud.bl { bottom: 12px; left: 14px; font-size: 0.72rem; color: var(--dim); background: rgba(10,14,20,0.82); padding: 6px 12px; border-radius: 9px; border: 1px solid #1c2433; }
-  .hudbtn { width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--border); background: rgba(19,25,36,0.92); color: var(--text); font-size: 1rem; cursor: pointer; }
-  .hudbtn.wide { width: auto; padding: 0 14px; font-size: 0.78rem; }
-  .hudbtn:hover { border-color: #58a6ff; }
-  #zoomlvl { font-size: 0.72rem; color: var(--muted); background: rgba(19,25,36,0.92); border: 1px solid var(--border); border-radius: 9px; padding: 8px 12px; }
-  #minimap { position: absolute; left: 14px; bottom: 52px; z-index: 24; width: 224px; background: rgba(13,20,32,0.9);
-    border: 1px solid var(--border); border-radius: 10px; padding: 6px; cursor: crosshair; }
-  #minimap svg { display: block; width: 100%; height: auto; }
-  #legend { position: absolute; right: 14px; bottom: 14px; z-index: 25; width: 330px; background: rgba(13,20,32,0.94);
-    border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; box-shadow: 0 10px 34px rgba(0,0,0,0.55); }
-  #legend .lg-title { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.14em; color: var(--text); margin-bottom: 9px; }
-  #legend .lg-zones { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 10px; }
-  #legend .lg-zones span { font-size: 0.72rem; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; }
-  #legend .lg-zones i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
-  #legend .lg-flow { font-size: 0.72rem; color: var(--muted); display: flex; align-items: center; gap: 7px; margin-bottom: 10px; }
-  #legend .lg-ladder { font-size: 0.72rem; color: var(--muted); margin-bottom: 9px; }
-  #legend .lg-ladder b { color: #79c0ff; } #legend .lg-ladder span { color: var(--dim); padding: 0 2px; }
-  #legend .lg-note { font-size: 0.68rem; color: var(--dim); line-height: 1.5; }
-  #tour { display: none; position: absolute; left: 50%; transform: translateX(-50%); bottom: 22px; z-index: 30;
-    width: min(620px, 90%); background: rgba(13,20,32,0.95); border: 1px solid #2f9e57; border-radius: 14px; padding: 16px 20px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
-  #tour-step { font-size: 0.7rem; color: #56d364; font-weight: 700; letter-spacing: 0.12em; margin-bottom: 6px; }
-  #tour-text { font-size: 0.92rem; color: var(--text); margin-bottom: 12px; }
-  .tour-btns { display: flex; gap: 8px; }
-  #errbar { display: none; position: absolute; top: 0; left: 0; right: 0; z-index: 50; background: #67060c; color: #ffd7d5; font-size: 0.75rem; padding: 6px 14px; }
-  footer { background: rgba(19,25,36,0.9); border-top: 1px solid #1c2433; text-align: center; padding: 7px; color: var(--dim); font-size: 0.7rem; z-index: 10; }
+  header { background: #10151f; border-bottom: 1px solid var(--border); padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; z-index: 10; }
+  header h1 { font-size: 1rem; font-weight: 650; }
+  header .subtitle { font-size: 0.72rem; color: var(--muted); }
+  .btn { padding: 6px 14px; border-radius: 7px; font-size: 0.78rem; border: 1px solid var(--border); background: #1c2433; color: var(--text); text-decoration: none; cursor: pointer; font-family: inherit; }
+  .btn:hover { border-color: var(--blue); }
+  .disclosure { background: rgba(163,113,247,0.07); border-bottom: 1px solid #322a52; padding: 4px 20px; font-size: 0.7rem; color: #c8b1f5; text-align: center; z-index: 10; }
+  #stage-wrap { flex: 1; position: relative; overflow: hidden; cursor: grab; }
+  #stage-wrap.dragging { cursor: grabbing; }
+  svg.map { display: block; width: 100%; height: 100%; user-select: none; }
   text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
   .clickable { cursor: pointer; }
-  .card { transition: stroke 0.15s; }
-  .card:hover { stroke: var(--acc, #58a6ff); stroke-width: 1.6; }
-  .flowline { stroke-dasharray: 16 14; animation: dash 1.6s linear infinite; }
-  @keyframes dash { to { stroke-dashoffset: -30; } }
+  .piece rect.pbg { transition: stroke-width 0.12s; }
+  .piece:hover rect.pbg { stroke-width: 2; }
+  .piece.selected rect.pbg { stroke-width: 2.6; }
+  #levels { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 30; display: flex; gap: 6px;
+    background: rgba(16,21,31,0.94); border: 1px solid var(--border); border-radius: 12px; padding: 6px; }
+  #levels button { border: 1px solid transparent; background: transparent; color: var(--muted); font-family: inherit;
+    font-size: 0.78rem; padding: 7px 13px; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+  #levels button b { color: var(--blue); margin-right: 5px; }
+  #levels button:hover { border-color: var(--border); color: var(--text); }
+  #levels button.active { background: #1d3a6e; border-color: #2f5eb0; color: #fff; }
+  #levels button.active b { color: #9ecbff; }
+  .hud { position: absolute; z-index: 25; display: flex; gap: 6px; }
+  .hud.tr { top: 12px; right: 14px; }
+  .hud.bl { bottom: 12px; left: 14px; font-size: 0.7rem; color: var(--dim); background: rgba(16,21,31,0.85); padding: 6px 12px; border-radius: 8px; border: 1px solid #1c2433; }
+  .hudbtn { min-width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: rgba(20,26,38,0.92); color: var(--text); font-size: 0.9rem; cursor: pointer; padding: 0 10px; font-family: inherit; }
+  .hudbtn:hover { border-color: var(--blue); }
+  #drawer { position: absolute; top: 0; right: 0; bottom: 0; width: 430px; max-width: 92vw; z-index: 40; background: #10151f;
+    border-left: 1px solid var(--border); box-shadow: -18px 0 40px rgba(0,0,0,0.5); transform: translateX(105%); transition: transform 0.28s ease; display: flex; flex-direction: column; }
+  #drawer.open { transform: translateX(0); }
+  #d-head { padding: 16px 18px 12px; border-bottom: 1px solid #1c2433; display: flex; align-items: center; gap: 12px; }
+  #d-ic { width: 40px; height: 40px; border-radius: 11px; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+  #d-ic svg { width: 22px; height: 22px; }
+  #d-name { font-size: 1.02rem; font-weight: 700; }
+  #d-zone { font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; }
+  #d-close { margin-left: auto; }
+  #d-tabs { display: flex; gap: 6px; padding: 10px 18px; border-bottom: 1px solid #1c2433; }
+  #d-tabs button { flex: 1; border: 1px solid var(--border); background: #141a26; color: var(--muted); font-family: inherit; font-size: 0.74rem; padding: 7px 0; border-radius: 8px; cursor: pointer; }
+  #d-tabs button.active { background: #1d3a6e; border-color: #2f5eb0; color: #fff; }
+  #d-tabs button:disabled { opacity: 0.3; cursor: default; }
+  #d-body { flex: 1; overflow-y: auto; padding: 16px 18px 30px; }
+  #d-body .d-desc { font-size: 0.85rem; color: var(--muted); margin-bottom: 16px; line-height: 1.6; }
+  .d-sec { font-size: 0.66rem; font-weight: 800; letter-spacing: 0.12em; color: var(--dim); margin: 18px 0 10px; }
+  .d-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .d-card { background: #141a26; border: 1px solid #232c3d; border-radius: 9px; padding: 10px 12px; }
+  .d-card h5 { font-size: 0.76rem; margin-bottom: 4px; }
+  .d-card p { font-size: 0.72rem; color: var(--muted); line-height: 1.5; }
+  .d-note { font-size: 0.74rem; color: var(--dim); margin-top: 10px; line-height: 1.55; }
+  .d-run { margin: 10px 0; }
+  .k-row { display: grid; grid-template-columns: 74px 1fr; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .k-lab { font-size: 0.66rem; color: var(--dim); text-align: right; font-family: 'SF Mono', monospace; }
+  .k-strip { display: flex; gap: 3px; background: #0b0f16; border: 1px solid #232c3d; border-radius: 6px; padding: 4px; min-height: 34px; overflow: hidden; }
+  .k-msg { width: 26px; height: 24px; border-radius: 4px; color: #fff; font-size: 0.6rem; font-weight: 700; display: flex; align-items: center; justify-content: center; font-family: 'SF Mono', monospace; flex: 0 0 auto; animation: pop 0.25s ease; }
+  @keyframes pop { from { transform: scale(0.3); opacity: 0; } }
+  .k-meta { font-size: 0.7rem; color: var(--green); font-family: 'SF Mono', monospace; margin-top: 6px; }
+  .dl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dl-pane { background: #0b0f16; border: 1px solid #232c3d; border-radius: 8px; padding: 8px; min-height: 130px; }
+  .dl-pane h6 { font-size: 0.62rem; color: var(--dim); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+  .dl-file { display: inline-flex; align-items: center; gap: 4px; background: #141a26; border: 1px solid #7d8590; border-radius: 4px; padding: 2px 7px; font-size: 0.62rem; font-family: 'SF Mono', monospace; margin: 2px; animation: pop 0.25s ease; }
+  .dl-file.gone { opacity: 0.25; text-decoration: line-through; border-style: dashed; }
+  .dl-log { font-size: 0.62rem; font-family: 'SF Mono', monospace; padding: 1px 0; animation: pop 0.2s ease; }
+  .dl-nav { display: flex; gap: 6px; align-items: center; margin-top: 8px; font-size: 0.7rem; color: var(--gold); font-family: 'SF Mono', monospace; }
+  .sp-stages { display: flex; gap: 8px; }
+  .sp-st { flex: 1; background: #0b0f16; border: 1px solid #232c3d; border-radius: 8px; padding: 8px; opacity: 0.5; transition: all 0.3s; }
+  .sp-st.on { opacity: 1; border-color: var(--blue); }
+  .sp-st.done { opacity: 1; border-color: var(--green); }
+  .sp-st h6 { font-size: 0.64rem; margin-bottom: 5px; }
+  .sp-tasks { display: flex; gap: 3px; flex-wrap: wrap; }
+  .sp-task { width: 11px; height: 11px; border-radius: 3px; background: #232c3d; }
+  .sp-task.run { background: var(--orange); } .sp-task.ok { background: var(--green); }
+  .sp-note { font-size: 0.68rem; color: var(--muted); margin-top: 8px; }
+  #legend { display: none; position: absolute; right: 14px; bottom: 14px; z-index: 26; background: rgba(16,21,31,0.95); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; width: 290px; }
+  #legend .t { font-size: 0.64rem; font-weight: 800; letter-spacing: 0.12em; margin-bottom: 8px; }
+  #legend .zs { display: flex; flex-wrap: wrap; gap: 5px 11px; margin-bottom: 8px; }
+  #legend .zs span { font-size: 0.68rem; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; }
+  #legend .zs i { width: 8px; height: 8px; border-radius: 50%; }
+  #legend .n { font-size: 0.66rem; color: var(--dim); line-height: 1.5; }
+  #tour { display: none; position: absolute; left: 50%; transform: translateX(-50%); bottom: 20px; z-index: 45;
+    width: min(600px, 92%); background: rgba(13,20,32,0.96); border: 1px solid #2f9e57; border-radius: 13px; padding: 14px 18px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
+  #tour-step { font-size: 0.66rem; color: #56d364; font-weight: 700; letter-spacing: 0.1em; margin-bottom: 5px; }
+  #tour-text { font-size: 0.88rem; margin-bottom: 10px; }
+  #errbar { display: none; position: absolute; top: 0; left: 0; right: 0; z-index: 60; background: #67060c; color: #ffd7d5; font-size: 0.72rem; padding: 5px 12px; }
+  footer { background: #10151f; border-top: 1px solid #1c2433; text-align: center; padding: 6px; color: var(--dim); font-size: 0.68rem; z-index: 10; }
 </style>
 </head>
 <body>
 <header>
   <div>
     <h1>Enterprise Banking Data Platform</h1>
-    <div class="subtitle">An explorable map — drag to move, scroll to zoom; the deeper you go, the lower-level it gets</div>
+    <div class="subtitle">Explorable architecture — pick a level, click any piece for its internals</div>
   </div>
   <a class="btn" href="https://github.com/Halkhoori2000/Data-Platform-Confluent-Kafka" target="_blank">GitHub</a>
 </header>
 <div class="disclosure">🔒 Generalized model — ideas, architecture and technology only. No proprietary systems, names, or data.</div>
-<div id="map-wrap">
+<div id="stage-wrap">
   <div id="errbar"></div>
-  <div class="hud tl"><span id="zoomlvl">zoom —</span></div>
+  <div id="levels">
+    <button data-lv="0"><b>L0</b>overview</button>
+    <button data-lv="1"><b>L1</b>all tools</button>
+    <button data-lv="2"><b>L2</b>inside a tool</button>
+    <button data-lv="3"><b>L3</b>mechanics</button>
+    <button data-lv="4"><b>L4</b>the logs</button>
+  </div>
   <div class="hud tr">
     <button class="hudbtn" id="z-in">＋</button>
     <button class="hudbtn" id="z-out">－</button>
-    <button class="hudbtn wide" id="z-fit">fit</button>
-    <button class="hudbtn wide" id="z-legend">legend</button>
+    <button class="hudbtn" id="z-fit">fit</button>
+    <button class="hudbtn" id="z-legend">legend</button>
   </div>
-  <div id="legend" style="display:none">
-    <div class="lg-title">READING THIS MAP</div>
-    <div class="lg-zones">
+  <div class="hud bl">drag to pan · scroll to magnify · click a piece for details</div>
+  <div id="legend">
+    <div class="t">LEGEND</div>
+    <div class="zs">
       <span><i style="background:#2dd4bf"></i>Sources</span><span><i style="background:#58a6ff"></i>Ingest</span>
       <span><i style="background:#f0883e"></i>Process</span><span><i style="background:#a371f7"></i>Serve</span>
       <span><i style="background:#3fb950"></i>Consume</span><span><i style="background:#f47067"></i>Security</span>
       <span><i style="background:#d2a8ff"></i>Governance</span>
     </div>
-    <div class="lg-flow"><svg width="72" height="10"><path d="M2 5h62" stroke="#9fb6d4" stroke-width="3" class="flowline"/></svg> data flow: ① capture → ② refine → ③ publish → ④ decide</div>
-    <div class="lg-ladder"><b>L0</b> landscape <span>›</span> <b>L1</b> planes &amp; tools <span>›</span> <b>L2</b> inside each tool <span>›</span> <b>L3</b> mechanics <span>›</span> <b>L4</b> the logs</div>
-    <div class="lg-note">Every card is clickable — the map flies to it. Live demos at L3/L4 inside Kafka, Delta Lake and Spark. Click “A record's journey” (bottom) for a guided tour.</div>
+    <div class="n">Solid arrows = data flow · dashed = metadata / control. L0–L1 change the canvas; L2–L4 deepen the panel for the selected piece (Kafka goes deepest).</div>
   </div>
   <div id="tour">
     <div id="tour-step"></div>
     <div id="tour-text"></div>
-    <div class="tour-btns"><button class="hudbtn wide" id="tour-next">next ▸</button><button class="hudbtn wide" id="tour-end">✕ end tour</button></div>
+    <div style="display:flex;gap:8px"><button class="hudbtn" id="tour-next">next ▸</button><button class="hudbtn" id="tour-end">✕ end</button></div>
   </div>
-  <div id="minimap"></div>
-  <div class="hud bl" id="hint">drag · scroll to zoom · click a card to fly · esc = whole map</div>
+  <div id="drawer">
+    <div id="d-head">
+      <div id="d-ic"></div>
+      <div><div id="d-name"></div><div id="d-zone"></div></div>
+      <button class="hudbtn" id="d-close">✕</button>
+    </div>
+    <div id="d-tabs">
+      <button data-d="2">L2 · inside</button>
+      <button data-d="3">L3 · mechanics</button>
+      <button data-d="4">L4 · the log</button>
+    </div>
+    <div id="d-body"></div>
+  </div>
 </div>
-<footer>Hamdan Alkhoori · An explorable, generalized model of an enterprise banking data platform — tool internals are public engineering knowledge; deliveries link to their case studies.</footer>
+<footer>Hamdan Alkhoori · A generalized model of an enterprise banking data platform — internals are public engineering knowledge; deliveries link to their case studies.</footer>
 
 <script>
 (function(){
 "use strict";
-window.addEventListener("error", e => { const b = document.getElementById("errbar"); b.style.display = "block"; b.textContent = "⚠ " + e.message; });
-
-/* ═══════ helpers ═══════ */
+window.addEventListener("error", e => { const b = document.getElementById("errbar"); b.style.display="block"; b.textContent = "⚠ " + e.message; });
 const NS = "http://www.w3.org/2000/svg";
-function el(tag, attrs, parent){
-  const n = document.createElementNS(NS, tag);
-  for (const k in attrs) n.setAttribute(k, attrs[k]);
-  if (parent) parent.appendChild(n);
-  return n;
-}
-function wrapText(str, size, maxw){
-  const cw = size * 0.52;
-  const words = String(str).split(" ");
-  const lines = []; let cur = "";
-  for (const w of words){
-    const t = cur ? cur + " " + w : w;
-    if (t.length * cw > maxw && cur) { lines.push(cur); cur = w; } else cur = t;
-  }
-  if (cur) lines.push(cur);
-  return lines;
-}
-function txt(parent, x, y, str, size, color, o){
-  o = o || {};
-  const t = el("text", { x, y, "font-size": size, fill: color, "font-weight": o.w || "normal",
-    "text-anchor": o.anchor || "start", "letter-spacing": o.ls || "0" }, parent);
-  if (o.maxw){
-    const lines = wrapText(str, size, o.maxw);
-    lines.forEach((ln,i) => el("tspan", { x, dy: i ? size*1.34 : 0 }, t).textContent = ln);
-    t._lines = lines.length;
-  } else { t.textContent = str; t._lines = 1; }
-  return t;
-}
-const linesOf = (str, size, maxw) => wrapText(str, size, maxw).length;
-function rect(parent, x, y, w, h, fill, stroke, rx, o){
-  o = o || {};
-  const r = el("rect", { x, y, width: w, height: h, fill, stroke: stroke || "none", "stroke-width": o.sw || 1, rx: rx == null ? 10 : rx }, parent);
-  if (o.filter) r.setAttribute("filter", o.filter);
-  return r;
-}
-function blend(hex, base, a){
-  const p = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
-  const A = p(hex), B = p(base);
-  const m = A.map((v,i) => Math.round(v*a + B[i]*(1-a)));
-  return "#" + m.map(v => v.toString(16).padStart(2,"0")).join("");
-}
+const $ = s => document.querySelector(s);
+function el(tag, attrs, parent){ const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (parent) parent.appendChild(n); return n; }
+function blend(hex, base, a){ const p = h => [1,3,5].map(i => parseInt(h.slice(i,i+2),16)); const A=p(hex), B=p(base);
+  return "#" + A.map((v,i) => Math.round(v*a + B[i]*(1-a)).toString(16).padStart(2,"0")).join(""); }
+const BG="#0b0f16", SURF="#141a26", TXT="#e6edf3", MUT="#9db1c7", DIM="#5a6a82";
+const Z = { sources:"#2dd4bf", ingest:"#58a6ff", process:"#f0883e", serve:"#a371f7", consume:"#3fb950", security:"#f47067", governance:"#d2a8ff", journey:"#56d364" };
 
-/* ═══════ design system ═══════ */
-const BASE = "#131924", BG = "#0a0e14", BORDER = "#2b3444", TXT = "#e6edf3", MUT = "#9db1c7", DIM = "#5a6a82", GOLD = "#eac54f";
-const ZONES = {
-  sources:   { acc:"#2dd4bf" }, ingest: { acc:"#58a6ff" }, process: { acc:"#f0883e" },
-  serve:     { acc:"#a371f7" }, consume:{ acc:"#3fb950" },
-  security:  { acc:"#f47067" }, governance: { acc:"#d2a8ff" }, journey: { acc:"#56d364" },
-};
-for (const z in ZONES){
-  const Z = ZONES[z];
-  Z.tint   = blend(Z.acc, BASE, 0.10);
-  Z.tint2  = blend(Z.acc, BASE, 0.20);
-  Z.faint  = blend(Z.acc, BG, 0.06);
-  Z.border = blend(Z.acc, BORDER, 0.38);
-  Z.soft   = blend(Z.acc, "#0d1420", 0.14);
-}
-
-/* ═══════ svg + defs ═══════ */
-const wrapEl = document.getElementById("map-wrap");
-const svg = el("svg", {}, wrapEl);
+const wrapEl = $("#stage-wrap");
+const svg = el("svg", { class:"map" }, wrapEl);
 const defs = el("defs", {}, svg);
-el("feDropShadow", { dx:0, dy:5, stdDeviation:7, "flood-color":"#000", "flood-opacity":0.5 }, el("filter", { id:"sh", x:"-20%", y:"-20%", width:"140%", height:"160%" }, defs));
-el("feDropShadow", { dx:0, dy:2, stdDeviation:3, "flood-color":"#000", "flood-opacity":0.45 }, el("filter", { id:"sh2", x:"-20%", y:"-20%", width:"140%", height:"160%" }, defs));
-for (const z in ZONES){
-  const g = el("linearGradient", { id:"gr-"+z, x1:0, y1:0, x2:0, y2:1 }, defs);
-  el("stop", { offset:"0%", "stop-color": ZONES[z].tint2 }, g);
-  el("stop", { offset:"100%", "stop-color": blend(ZONES[z].acc, BASE, 0.04) }, g);
-  const gb = el("linearGradient", { id:"grb-"+z, x1:0, y1:0, x2:1, y2:0 }, defs);
-  el("stop", { offset:"0%", "stop-color": blend(ZONES[z].acc, BASE, 0.55) }, gb);
-  el("stop", { offset:"100%", "stop-color": blend(ZONES[z].acc, BASE, 0.18) }, gb);
-}
-["bronze:#c98b3f","silver:#aab4c0","gold:#eac54f"].forEach(s => {
-  const [nm, c] = s.split(":");
-  const g = el("linearGradient", { id:"cyl-"+nm, x1:0, y1:0, x2:1, y2:0 }, defs);
-  el("stop", { offset:"0%", "stop-color": blend(c, "#000000", 0.55) }, g);
-  el("stop", { offset:"45%", "stop-color": c }, g);
-  el("stop", { offset:"100%", "stop-color": blend(c, "#000000", 0.45) }, g);
-});
-/* zone glows */
-for (const z in ZONES){
-  const rg = el("radialGradient", { id:"glow-"+z, cx:"50%", cy:"30%", r:"70%" }, defs);
-  el("stop", { offset:"0%", "stop-color": ZONES[z].acc, "stop-opacity":0.10 }, rg);
-  el("stop", { offset:"100%", "stop-color": ZONES[z].acc, "stop-opacity":0 }, rg);
-}
-/* dotted background pattern */
-{
-  const pat = el("pattern", { id:"dots", width:70, height:70, patternUnits:"userSpaceOnUse" }, defs);
-  el("circle", { cx:1.5, cy:1.5, r:1.5, fill:"#182031" }, pat);
-}
-/* icon symbols (24×24, stroke) */
-function sym(id, inner){
-  const s = el("symbol", { id, viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", "stroke-width":1.9, "stroke-linecap":"round", "stroke-linejoin":"round" }, defs);
-  s.innerHTML = inner;
-}
-sym("i-db",    '<ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>');
-sym("i-stream",'<path d="M3 7h11"/><path d="M3 12h15"/><path d="M3 17h11"/><path d="M14 4l4 3-4 3"/><path d="M18 9l4 3-4 3"/><path d="M14 14l4 3-4 3"/>');
-sym("i-plug",  '<circle cx="9" cy="12" r="5"/><path d="M14 12h7"/><path d="M18 8v8"/>');
-sym("i-book",  '<path d="M4 4h9a3 3 0 013 3v13H7a3 3 0 01-3-3V4z"/><path d="M16 7h4v13h-4"/><path d="M7 8h6M7 12h6"/>');
-sym("i-flow",  '<rect x="2" y="4" width="7" height="6" rx="1.5"/><rect x="15" y="14" width="7" height="6" rx="1.5"/><path d="M9 7h5a4 4 0 014 4v3"/>');
-sym("i-drop",  '<path d="M12 3s6 7 6 11a6 6 0 01-12 0c0-4 6-11 6-11z"/><path d="M8.5 14a3.5 3.5 0 003.5 3.5"/>');
-sym("i-file",  '<path d="M6 2h8l5 5v15H6z"/><path d="M14 2v5h5"/><path d="M9 13h7M9 17h7"/>');
-sym("i-layers",'<path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/><path d="M3 17.5l9 5 9-5"/>');
-sym("i-burst", '<path d="M12 2v5M12 17v5M2 12h5M17 12h5M5 5l3.5 3.5M15.5 15.5L19 19M19 5l-3.5 3.5M8.5 15.5L5 19"/>');
-sym("i-gear",  '<circle cx="12" cy="12" r="3.5"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5 5l2.1 2.1M16.9 16.9L19 19M19 5l-2.1 2.1M7.1 16.9L5 19"/>');
-sym("i-delta", '<path d="M12 3L22 21H2L12 3z"/><path d="M12 9l6.5 10h-13L12 9z"/>');
+function sym(id, inner){ const s = el("symbol", { id, viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", "stroke-width":1.9, "stroke-linecap":"round", "stroke-linejoin":"round" }, defs); s.innerHTML = inner; }
+sym("i-db",'<ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v13c0 1.7 3.6 3 8 3s8-1.3 8-3v-13"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>');
+sym("i-stream",'<path d="M3 7h11M3 12h15M3 17h11"/><path d="M14 4l4 3-4 3M18 9l4 3-4 3M14 14l4 3-4 3"/>');
+sym("i-plug",'<circle cx="9" cy="12" r="5"/><path d="M14 12h7M18 8v8"/>');
+sym("i-book",'<path d="M4 4h9a3 3 0 013 3v13H7a3 3 0 01-3-3V4z"/><path d="M16 7h4v13h-4"/><path d="M7 8h6M7 12h6"/>');
+sym("i-flow",'<rect x="2" y="4" width="7" height="6" rx="1.5"/><rect x="15" y="14" width="7" height="6" rx="1.5"/><path d="M9 7h5a4 4 0 014 4v3"/>');
+sym("i-drop",'<path d="M12 3s6 7 6 11a6 6 0 01-12 0c0-4 6-11 6-11z"/>');
+sym("i-file",'<path d="M6 2h8l5 5v15H6z"/><path d="M14 2v5h5"/><path d="M9 13h7M9 17h7"/>');
+sym("i-layers",'<path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/>');
+sym("i-gear",'<circle cx="12" cy="12" r="3.5"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5 5l2.1 2.1M16.9 16.9L19 19M19 5l-2.1 2.1M7.1 16.9L5 19"/>');
+sym("i-delta",'<path d="M12 3L22 21H2L12 3z"/><path d="M12 9l6.5 10h-13L12 9z"/>');
 sym("i-funnel",'<path d="M3 4h18l-7 8v7l-4 2v-9L3 4z"/>');
-sym("i-table", '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10M15 10v10"/>');
-sym("i-share", '<circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="5.5" r="2.6"/><circle cx="18" cy="18.5" r="2.6"/><path d="M8.3 10.8l7.4-4M8.3 13.2l7.4 4"/>');
-sym("i-api",   '<path d="M8 5L3 12l5 7"/><path d="M16 5l5 7-5 7"/><path d="M13 4l-2 16"/>');
-sym("i-bars",  '<rect x="4" y="12" width="4" height="8" rx="1"/><rect x="10" y="7" width="4" height="13" rx="1"/><rect x="16" y="3" width="4" height="17" rx="1"/>');
-sym("i-spark", '<path d="M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4L12 2z"/>');
-sym("i-flask", '<path d="M10 3h4M11 3v6l-6 10a2 2 0 002 2h10a2 2 0 002-2L13 9V3"/><path d="M7.5 15h9"/>');
+sym("i-table",'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10M15 10v10"/>');
+sym("i-share",'<circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="5.5" r="2.6"/><circle cx="18" cy="18.5" r="2.6"/><path d="M8.3 10.8l7.4-4M8.3 13.2l7.4 4"/>');
+sym("i-api",'<path d="M8 5L3 12l5 7M16 5l5 7-5 7"/>');
+sym("i-bars",'<rect x="4" y="12" width="4" height="8" rx="1"/><rect x="10" y="7" width="4" height="13" rx="1"/><rect x="16" y="3" width="4" height="17" rx="1"/>');
+sym("i-burst",'<path d="M12 2v5M12 17v5M2 12h5M17 12h5M5 5l3.5 3.5M15.5 15.5L19 19M19 5l-3.5 3.5M8.5 15.5L5 19"/>');
+sym("i-flask",'<path d="M10 3h4M11 3v6l-6 10a2 2 0 002 2h10a2 2 0 002-2L13 9V3"/><path d="M7.5 15h9"/>');
 sym("i-shield",'<path d="M12 2l8 3.5V12c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V5.5L12 2z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>');
 sym("i-person",'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/>');
-sym("i-key",   '<circle cx="8" cy="14" r="4.5"/><path d="M11.5 10.5L20 2M16 6l3 3M13 9l2.5 2.5"/>');
-sym("i-lock",  '<rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/>');
-sym("i-net",   '<circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M10.8 7L6.3 16M13.2 7l4.5 9M7.5 18h9"/>');
-sym("i-check", '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16.5 9"/>');
-sym("i-map",   '<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/>');
-sym("i-bag",   '<path d="M5 8h14l-1.2 12H6.2L5 8z"/><path d="M9 8V6a3 3 0 016 0v2"/>');
-sym("i-phone", '<rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18.5h2"/>');
-sym("i-bolt",  '<path d="M13 2L4 14h7l-2 8 9-12h-7l2-8z"/>');
-sym("i-clock", '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>');
-sym("i-card",  '<rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20M6 15h5"/>');
-sym("i-coin",  '<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1 1.1-1.8 2.5-1.8s2.5.8 2.5 1.8-1 1.6-2.5 2-2.5 1-2.5 2 1.1 1.8 2.5 1.8 2.5-.8 2.5-1.8"/>');
-sym("i-house", '<path d="M3 11l9-8 9 8"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>');
-sym("i-genie", '<path d="M12 3l1.5 4L18 8.5 13.5 10 12 14l-1.5-4L6 8.5 10.5 7 12 3z"/><path d="M18 14l.9 2.4L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.6L18 14z"/>');
-
-function icon(parent, x, y, size, id, color){
-  const u = el("use", { href:"#"+id, x, y, width:size, height:size }, parent);
-  u.style.color = color;
-  return u;
-}
-function iconChip(parent, cx, cy, r, id, acc){
-  rect(parent, cx - r, cy - r, r*2, r*2, blend(acc, BASE, 0.16), blend(acc, BASE, 0.45), r*0.42);
-  icon(parent, cx - r*0.62, cy - r*0.62, r*1.24, id, acc);
-}
+sym("i-key",'<circle cx="8" cy="14" r="4.5"/><path d="M11.5 10.5L20 2M16 6l3 3"/>');
+sym("i-lock",'<rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/>');
+sym("i-net",'<circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M10.8 7L6.3 16M13.2 7l4.5 9M7.5 18h9"/>');
+sym("i-check",'<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16.5 9"/>');
+sym("i-map",'<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/>');
+sym("i-bag",'<path d="M5 8h14l-1.2 12H6.2L5 8z"/><path d="M9 8V6a3 3 0 016 0v2"/>');
+sym("i-phone",'<rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18.5h2"/>');
+sym("i-card",'<rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M2 10h20M6 15h5"/>');
+sym("i-coin",'<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1 1.1-1.8 2.5-1.8s2.5.8 2.5 1.8-1 1.6-2.5 2-2.5 1-2.5 2 1.1 1.8 2.5 1.8 2.5-.8 2.5-1.8"/>');
+sym("i-house",'<path d="M3 11l9-8 9 8"/><path d="M5 9.5V21h14V9.5"/>');
+sym("i-genie",'<path d="M12 3l1.5 4L18 8.5 13.5 10 12 14l-1.5-4L6 8.5 10.5 7 12 3z"/><path d="M18 14l.9 2.4L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.6L18 14z"/>');
+sym("i-clock",'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>');
+sym("i-bolt",'<path d="M13 2L4 14h7l-2 8 9-12h-7l2-8z"/>');
+const mk = el("marker", { id:"arr", viewBox:"0 0 10 10", refX:8.5, refY:5, markerWidth:5.5, markerHeight:5.5, orient:"auto-start-reverse" }, defs);
+el("path", { d:"M0 0L10 5L0 10z", fill:"#8aa0bd" }, mk);
 
 const world = el("g", {}, svg);
+const edgeLayer = el("g", {}, world);
+const pieceLayer = el("g", {}, world);
+function txt(parent, x, y, s, size, color, o){ o = o || {};
+  const t = el("text", { x, y, "font-size": size, fill: color, "font-weight": o.w || "normal", "text-anchor": o.anchor || "start", "letter-spacing": o.ls || 0 }, parent);
+  t.textContent = s; return t; }
+function icon(parent, x, y, size, id, color){ const u = el("use", { href:"#"+id, x, y, width:size, height:size }, parent); u.style.color = color; return u; }
 
-/* ═══════ LOD ═══════ */
-const lod = [];
-const POS = {};
-const FRAMES = [];
-function lodGroup(parent, minK, maxK){
-  const g = el("g", { opacity:0 }, parent);
-  g.style.pointerEvents = "none";
-  lod.push({ g, minK, maxK: maxK || Infinity });
+/* ═══════ node definitions (drawer content) ═══════ */
+const NODES = {};
+function def(id, zone, ic, name, sub, desc, l2, extra){
+  NODES[id] = Object.assign({ id, zone, icon: ic, name, sub, desc, l2 }, extra || {});
+}
+def("core","sources","i-db","Core banking","system of record","Accounts, customers, transactions — the system of record. Its database changes are captured continuously via CDC; the source never feels the platform.",
+ [["System of record","Every balance starts here; nothing downstream may disagree with it."],["Captured, not queried","CDC reads the database's change log — zero load on the source."]]);
+def("cards","sources","i-card","Cards","CB + IB portfolios","Issuing and acquiring, conventional and Islamic portfolios — batch positions plus real-time authorization events.",
+ [["Two books","Conventional and Islamic keep different fields — profit rate, not interest rate."],["Mixed shapes","Monthly files and event streams from one domain."]]);
+def("payments","sources","i-coin","Payments","event-native","Transfers, clearing, gateway events — a payment is a sequence of events; streaming fits it exactly.",
+ [["Event-native","Initiated, cleared, settled — each step an event on the stream."]]);
+def("lending","sources","i-house","Lending & mortgages","batch extracts","Originations, servicing, collateral — slow-moving but every field feeds risk models.",
+ [["Quality beats speed","Positions move monthly; correctness matters more than latency."]]);
+def("treasury","sources","i-bars","Treasury & finance","period-end","Positions, GL, regulatory ledgers — the calendar closes them; watermarked batches follow.",
+ [["Period-end world","The GL closes on a calendar; ingestion follows it."]]);
+def("channels","sources","i-phone","Digital channels","behavioural events","Mobile and web activity — millions of small events; partitioned streams absorb them.",
+ [["Volume over size","High-rate small events — built for streaming."]]);
+def("crm","sources","i-person","CRM & operations","context data","Customer interactions, cases, campaigns — joins onto transactions to explain the why.",
+ [["The why","Context that gives transactions their meaning."]]);
+def("risk","sources","i-shield","Risk systems","lineage-critical","Ratings, provisions, exposures — both a source and the consumer that cares most about lineage.",
+ [["Source and consumer","Feeds data in, consumes Gold — lineage non-negotiable."]]);
+def("excel","sources","i-file","Manual Excel history","535 sheets · 8 systems","Years of monthly files, exported by hand, drifting in shape — the problem the Historic Data Loading delivery solved on this platform.",
+ [["535 sheets · 41+ GB","Headers under title rows, columns renaming across years, corrupt workbooks."],["Solved here","Metadata-driven pipeline — see the journey panel below."]],
+ { link:{ label:"Open the HDL case study →", href:"https://halkhoori2000.github.io/Historic-Data-Loading/" } });
+def("partner","sources","i-share","Partner feeds","their schedule","Bureaus, processors, market data — files and APIs arriving on their own schedules.",
+ [["Arrival-driven","The platform reacts to files; it never waits."]]);
+def("connect","ingest","i-plug","Kafka Connect","CDC + JDBC connectors","The bridge between databases and streams — configuration, not code. Source connectors capture changes in; sink connectors deliver topics onward.",
+ [["CDC connectors","Read the database's own log — every change becomes an event."],["JDBC connectors","No log access? Incremental queries by key/timestamp."],["Workers & tasks","Dead tasks reschedule; dead workers hand over."],["Secrets & promotion","Configs reference a vault; promote UAT → PROD like code."]]);
+def("kafka","ingest","i-stream","Confluent Kafka","topics · partitions · clusters","The streaming backbone: real-time change events, organized for isolation and reuse. The deepest piece on the map — L3 goes inside a cluster, L4 inside a partition.",
+ [["One org, many clusters","PROD/dev/test plus per-use-case clusters — workloads never starve each other."],["Cluster linking","Topics replicate between clusters — produce once, consume anywhere."],["Topics & partitions","Ordering holds within a partition, never across."],["Consumer groups","Partitions split across members; add consumers to scale."]],
+ { deep:3, deepest:4 });
+def("registry","ingest","i-book","Schema Registry","contracts","Schemas as contracts between producers and consumers — evolution without breakage.",
+ [["Enforced contracts","Every topic's shape registered and versioned."],["Compatibility modes","Backward / forward / full — breaking changes rejected at registration."]]);
+def("adf","ingest","i-flow","ADF pipelines","Lookup → ForEach → Copy","The batch workhorse: orchestrated, parameterised copy driven by control tables, with schedules, triggers, and integration runtimes reaching private sources.",
+ [["The pattern","Look up what to move, loop, copy — one file or thousands."],["Triggers","Schedule, tumbling window, or file-arrival event."],["Integration runtimes","Self-hosted IRs reach what the cloud can't."],["Parameterised","Source, path, period arrive from control tables."]]);
+def("watermark","ingest","i-drop","Watermark control tables","incremental brain","Metadata remembers what's loaded; every run takes only what's above the watermark — idempotent by design. Proven at 535-sheet scale in HDL.",
+ [["High-water mark","Load above the recorded period, then advance it."],["Row per unit of work","Path, target, parameters, active flag."],["Idempotent","Each unit overwrites its own target — replays are safe."]]);
+def("autoloader","ingest","i-bolt","Auto Loader","exactly-once files","Watches landing paths, checkpoints what it has seen, processes each new file exactly once — directory listing or storage events.",
+ [["Two discovery modes","Listing for simple cases; notifications at scale."],["Checkpointed","Restarts resume; never double-load."],["Rescued data","Non-conforming values land in a rescue column."]]);
+def("federation","ingest","i-api","Lakehouse Federation","query in place","External databases mount as catalogs — queried in place with pushdown, governed like native tables; ingest only when it earns it.",
+ [["Foreign catalogs","Same permission model as native tables."],["Pushdown","Filters run at the source; only results travel."]]);
+def("bronze","process","i-layers","Bronze","as-produced","Raw, full fidelity, lineage stamped on every row. Nothing is ever altered here — failed conformance never costs source data.",
+ [["Raw is sacred","The original truth, always recoverable."],["Lineage stamped","System, file, period, ingest time on every record."]]);
+def("silver","process","i-layers","Silver","conformed","Typed, deduplicated, mapped to the enterprise data model — one shared language for every source.",
+ [["Enterprise model","One agreed definition of customer, account, transaction."],["Deterministic dedup","Drop / merge / prefix / quarantine — never a silent guess."]]);
+def("gold","process","i-layers","Gold","business marts","Metrics, aggregates, compliance fields — IFRS 9 / Basel-style, computed under governance, query-ready.",
+ [["Built for questions","Facts and dimensions shaped for the business."],["Compliance-grade","Lineage from every figure back to source."]]);
+def("spark","process","i-burst","Spark + Photon","lazy DAG · vectorized","Describe the whole job, execute lazily in parallel tasks. Photon runs the same plans on a vectorized C++ engine. L3 shows a job executing live.",
+ [["Driver & executors","One brain, many hands across machines."],["Lazy → DAG","Nothing runs until an action forces it — optimized as one."],["Stages & shuffles","The DAG splits where data regroups — the expensive part."],["Photon","Same API, several times faster on SQL work."]],
+ { deep:3 });
+def("dlt","process","i-layers","Delta Live Tables","declarative + expectations","Pipelines declared, not scripted — DLT works out order, parallelism, retries. Quality rules live inside the pipeline.",
+ [["Declared, not scripted","State what each table should be."],["Expectations","Warn, drop, or fail — metrics per run, per rule."],["Computed lineage","The pipeline diagram is generated, never drawn."]]);
+def("workflows","process","i-gear","Workflows","jobs · retries · alerts","The operational wrapper: task graphs, schedules, right-sized job clusters, and failures that are never silent.",
+ [["Task graphs","Step B waits for step A — dependencies explicit."],["Right-sized compute","Clusters exist only for the run."],["Failure is loud","Retries, timeouts, alerts."]]);
+def("etl","process","i-funnel","ETL framework & mapping","metadata-driven","Reusable Extract-Clean-Transform-Load components configured by mapping metadata — never per-source scripts. Mappings are reviewable, versioned, signed off.",
+ [["Framework, not scripts","Same components for every system."],["Mappings are metadata","Source→Bronze→Silver→Gold maps live in config."],["Rejected-data stores","Failures land with reasons — reprocessable."],["Common services","Logging, audit, exceptions — written once."]]);
+def("adls","process","i-db","ADLS Gen2","the physical ground","Hierarchical, cheap, durable object storage — landing, Bronze, Silver, Gold as governed path hierarchies.",
+ [["Real directories","Atomic renames — what engines and ACLs need."],["Zones as paths","Per system, per period, governed."]]);
+def("delta","process","i-delta","Delta Lake","ACID on the lake","A transaction log makes files behave like a database: atomic commits, time travel, schema enforcement. L3 opens the log itself — with a live demo.",
+ [["ACID on object storage","Complete commits or nothing."],["Time travel","Every version queryable — audit and rollback free."],["Schema enforcement","Drift becomes a decision, not an accident."],["Stream + batch","One table serves both, safely serialized."]],
+ { deep:3 });
+def("dbsql","serve","i-table","Databricks SQL","warehouse on the lake","Warehouse-grade SQL directly on Gold — elastic, cached, governed by the same catalog as the pipelines.",
+ [["Elastic warehouses","Spin up on demand, suspend when idle."],["Photon + caching","Dashboard queries feel interactive."],["Catalog-governed","Analysts see exactly what they're granted."]]);
+def("semantic","serve","i-book","Semantic layer","one truth","Business definitions in one place — every tool computes 'NPL ratio' the same way.",
+ [["Define once","One metric definition serves every dashboard."]]);
+def("sharing","serve","i-share","Delta Sharing","no copies","Open-protocol sharing: recipients read live governed tables — nothing exported, everything revocable.",
+ [["Shares & recipients","Named bundles, readable from any compatible tool."],["Cross-boundary","Workspaces, orgs, clouds — one mechanism."]]);
+def("endpoints","serve","i-api","Endpoints & APIs","governed access","Applications and reports consume through authenticated, auditable endpoints.",
+ [["Governed interfaces","Every consumer authenticates; every access audited."]]);
+def("powerbi","consume","i-bars","Power BI + Copilot","dashboards","Enterprise dashboards over the semantic layer — row-level security intact, AI assistance on top.",
+ [["Semantic models","Measures defined once, reused everywhere."],["Import vs DirectQuery","Cache for speed or query live."],["Row-level security","Each viewer sees only their slice."]]);
+def("genie","consume","i-genie","AI/BI Genie","ask in English","Plain-language questions answered from governed data — the generated SQL is inspectable, permissions apply to the asker.",
+ [["Curated spaces","Scoped to governed tables with context."],["Visible SQL","Trust through transparency."]]);
+def("ds","consume","i-flask","Data science & ML","governed features","Notebooks and models on cataloged Gold and Silver — auditable from the data up.",
+ [["Same governance","Features come from cataloged tables."]]);
+def("riskout","consume","i-shield","Risk & regulatory","lineage to source","Reports whose every figure traces back to a source system — a regulator's question has a computed answer.",
+ [["Explainable numbers","Lineage end-to-end, by construction."]]);
+def("entra","security","i-person","Entra ID","identity first","One identity plane: SSO, MFA, service principals for every automated actor — nobody and no pipeline is anonymous.",
+ [["Machines have identities","No shared accounts, no passwords in scripts."],["Groups drive access","Leavers become membership changes."]]);
+def("keyvault","security","i-key","Key Vault","secrets nowhere in code","Credentials live in the vault; code holds references. Rotate without redeploys.",
+ [["Secret scopes","Resolved at runtime by name."],["Rotation","Every consumer picks it up automatically."]]);
+def("rbac","security","i-lock","RBAC & masking","least privilege","Role-based access down to rows and columns; sensitive fields masked for non-privileged eyes.",
+ [["Inside tables","The same table answers differently per role."]]);
+def("network","security","i-net","Private networking","dark by default","Private endpoints, VNet peering, controlled egress — if a path isn't provisioned, it doesn't exist. All of it as Terraform.",
+ [["Dark by default","No public internet paths."],["Network as code","Reviewable, repeatable modules."]]);
+def("unity","governance","i-book","Unity Catalog","one metastore","Tables, files, models governed in one place — grants, audit, and lineage captured from real queries.",
+ [["Three-level namespace","catalog.schema.object — clean separation."],["Automatic lineage","Never drifting documentation."]]);
+def("dq","governance","i-check","Data quality","measured, not assumed","Rules attached to data, metrics over time, quarantine for critical failures — never a silent guess.",
+ [["Rule types","Nulls, formats, reference, uniqueness, reconciliation."],["Quarantine","Failed critical rules hold for review."]]);
+def("mapping","governance","i-map","Mapping & dictionary","business owns meaning","The column matrix workflow: business fills required/name/type — that becomes the dictionary pipelines enforce.",
+ [["The matrix","Every column plotted over time, signed off."]]);
+def("marketplace","governance","i-bag","Catalog & marketplace","data as product","Datasets findable and requestable with owners, docs, and quality scores — shopping, not spelunking.",
+ [["Data as product","Owned, documented, scored."]]);
+
+/* ═══════ layout: individual pieces ═══════ */
+const P = {};
+function piece(id, x, y, w, h, opts){
+  opts = opts || {};
+  const d = NODES[id], acc = Z[d.zone];
+  w = w || 250; h = h || 64;
+  P[id] = { x, y, w, h };
+  const g = el("g", { class:"piece clickable" }, pieceLayer);
+  g.dataset.id = id;
+  if (opts.lv) g.dataset.lv = opts.lv;
+  el("rect", { x, y, width:w, height:h, rx:12, fill: blend(acc, SURF, opts.strong ? 0.16 : 0.07), stroke: blend(acc, "#2b3444", 0.55), "stroke-width":1.2, class:"pbg" }, g);
+  const ir = 13;
+  el("rect", { x:x+12, y:y+h/2-ir, width:ir*2, height:ir*2, rx:8, fill: blend(acc, SURF, 0.22) }, g);
+  icon(g, x+12+ir-8.5, y+h/2-8.5, 17, d.icon, acc);
+  txt(g, x+46, y+h/2 - (d.sub ? 3 : -5), d.name, 15.5, TXT, { w:"650" });
+  if (d.sub) txt(g, x+46, y+h/2+14, d.sub, 10.5, blend(acc, "#ffffff", 0.55));
+  if (d.deep) txt(g, x+w-10, y+16, d.deepest ? "→ L4" : "→ L3", 10, acc, { anchor:"end", w:"800" });
+  g.addEventListener("click", e => { e.stopPropagation(); select(id); });
   return g;
 }
-function updateLOD(k){
-  for (const L of lod){
-    const on = k >= L.minK && k < L.maxK;
-    if (on === L._on) continue;
-    L._on = on;
-    L.g.setAttribute("opacity", on ? 1 : 0);
-    L.g.style.pointerEvents = on ? "auto" : "none";
-  }
+function label(x, y, s, color){ txt(world, x, y, s.toUpperCase(), 15, color || DIM, { w:"800", ls:"0.16em" }); }
+function groupLabel(x, y, s, acc, lv){
+  const g = el("g", lv ? { "data-lv": lv } : {}, world);
+  el("circle", { cx:x, cy:y-4, r:3.5, fill:acc }, g);
+  txt(g, x+11, y, s.toUpperCase(), 11, blend(acc,"#ffffff",0.6), { w:"700", ls:"0.12em" });
 }
 
-/* ═══════ content (same model, trimmed) ═══════ */
-const DATA = {
-  pillars: ["Data Hydration","Data Platform","Data Governance","Data Privacy","Data as a Product","Data Literacy"],
-  columns: [
-    { id:"sources", name:"Sources", tag:"where data is born", icon:"i-db", lanes:[
-      { title:"Transactional & product systems", nodes:[
-        { name:"Core banking", icon:"i-db", desc:"Accounts, customers, transactions — the system of record; its changes captured continuously via CDC.",
-          l2:[["System of record","Every balance starts here; nothing downstream may disagree with it."],["Captured, not queried","CDC reads the database's change log — the source never feels the platform."]] },
-        { name:"Cards", icon:"i-card", desc:"Issuing & acquiring, conventional and Islamic portfolios — batch positions plus event streams.",
-          l2:[["Two books","Conventional and Islamic keep different fields — profit rate, not interest rate."],["Mixed shapes","Monthly position files and real-time authorization events, same domain."]] },
-        { name:"Payments", icon:"i-coin", desc:"Transfers, clearing, gateway events — naturally streaming-shaped data.",
-          l2:[["Event-native","A payment is a sequence — initiated, cleared, settled; streaming fits exactly."]] },
-        { name:"Lending & mortgages", icon:"i-house", desc:"Originations, servicing, collateral — batch extracts and reference data.",
-          l2:[["Slow, high-stakes","Positions move monthly, but every field feeds risk models — quality beats speed."]] },
-        { name:"Treasury & finance", icon:"i-bars", desc:"Positions, GL, regulatory ledgers — end-of-period batch by nature.",
-          l2:[["Period-end world","The GL closes on a calendar; ingestion follows with watermarked batches."]] },
-      ]},
-      { title:"People & channels", nodes:[
-        { name:"Digital channels", icon:"i-phone", desc:"Mobile and web activity — high-volume behavioural events.",
-          l2:[["Volume over size","Millions of small events; partitioned streams absorb them easily."]] },
-        { name:"CRM & operations", icon:"i-person", desc:"Customer interactions, cases, campaigns — the context data.",
-          l2:[["The why","Joins onto transactions to explain the why behind the what."]] },
-        { name:"Risk systems", icon:"i-shield", desc:"Ratings, provisions, exposures — the consumers who care most about lineage.",
-          l2:[["Source and consumer","Risk feeds data in and consumes Gold — lineage is its non-negotiable."]] },
-      ]},
-      { title:"The long tail", nodes:[
-        { name:"Manual Excel history", icon:"i-file", journey:true, desc:"Years of monthly files, exported by hand, drifting in shape — the Historic Data Loading problem.",
-          l2:[["535 sheets · 8 systems · 41+ GB","Headers under title rows, columns renaming across years, corrupt workbooks."],["Solved on this platform","Metadata-driven pipeline — see the journey panel below the map."]] },
-        { name:"Partner & external feeds", icon:"i-share", desc:"Bureaus, processors, market data — files and APIs on their own schedules.",
-          l2:[["Their schedule","Arrival-driven ingestion; the platform reacts to files, never waits."]] },
-      ]},
-    ]},
-    { id:"ingest", name:"Ingest", tag:"getting it in", icon:"i-stream", lanes:[
-      { title:"Streaming — change data capture", nodes:[
-        { name:"Confluent Kafka", icon:"i-stream", kafka:true, desc:"The streaming backbone: real-time change events from core databases, organized for isolation and reuse.",
-          l2:[["One org, many clusters","PROD, dev, test — plus dedicated clusters per use case, so workloads never starve each other."],
-              ["Cluster linking","Topics replicate between clusters without copy jobs — produce once, consume anywhere."],
-              ["Reuse over rebuild","New use cases tap existing CDC topics; capture happens once per source."],
-              ["Topics & partitions","A topic is a named stream split into partitions. Ordering holds within a partition — never across."]] },
-        { name:"Kafka Connect", icon:"i-plug", desc:"CDC and JDBC connectors capture inserts, updates, deletes into topics — configuration, not code.",
-          l2:[["CDC connectors","Read the database's own change log — zero query load on the source."],
-              ["JDBC connectors","No log access? Incremental queries by key or timestamp — a watermark, streamed."],
-              ["Workers & tasks","Connectors run as distributed tasks; dead tasks reschedule, dead workers hand over."],
-              ["Secrets & promotion","Configs reference a vault and promote UAT → PROD like code."]] },
-        { name:"Schema Registry", icon:"i-book", desc:"Schemas as contracts between producers and consumers — evolution without breakage.",
-          l2:[["Contracts, enforced","Every topic's shape is registered and versioned; consumers read schema, not guesswork."],
-              ["Compatibility modes","Backward, forward or full — breaking changes are rejected at registration."],
-              ["2am prevention","Removing a required field fails at commit time — not in production."]] },
-      ]},
-      { title:"Batch — orchestrated copy", nodes:[
-        { name:"ADF pipelines", icon:"i-flow", desc:"Control-table-driven Lookup → ForEach → Copy, with schedules, triggers, integration runtimes.",
-          l2:[["Lookup → ForEach → Copy","Look up what to move, loop, copy — one pattern from one file to thousands."],
-              ["Triggers","Schedule, tumbling window, or event — pipelines start themselves."],
-              ["Integration runtimes","Self-hosted runtimes reach private sources the cloud can't touch."],
-              ["Parameterised","Source, path, period arrive as parameters — one pipeline, many systems."]] },
-        { name:"Watermark control tables", icon:"i-drop", desc:"Metadata remembers what's loaded; runs take only what's above the watermark — idempotent by design.",
-          l2:[["High-water mark","A control table records the latest loaded period; runs load above it, then advance it."],
-              ["A row per unit of work","Each file/sheet/period: path, target, parameters, active flag."],
-              ["Idempotent","Each unit overwrites its own target — replaying is always safe."],
-              ["Proven at 535 sheets","This exact pattern drove Historic Data Loading — journey below."]] },
-      ]},
-      { title:"Files & lakehouse-native", nodes:[
-        { name:"Auto Loader", icon:"i-bolt", desc:"Watches landing paths, checkpoints what it's seen, processes each new file exactly once.",
-          l2:[["Two discovery modes","Directory listing, or storage-event notifications when folders get huge."],
-              ["Checkpointed","Processed files live in a checkpoint — restarts resume, never double-load."],
-              ["Rescued data","Values that don't fit the schema land in a rescue column — nothing lost."]] },
-        { name:"Delta Live Tables", icon:"i-layers", desc:"Declarative pipelines with data-quality expectations built in.",
-          l2:[["Declared, not scripted","State what each table should be; DLT works out order, parallelism, retries."],
-              ["Expectations","Quality rules as code: warn, drop or fail — metrics per run, per rule."],
-              ["Computed lineage","The dependency graph derives from declarations — never drawn by hand."]] },
-        { name:"Lakehouse Federation", icon:"i-api", desc:"Query sources in place when moving the data isn't worth it.",
-          l2:[["Foreign catalogs","External databases mount as catalogs — same permission model as native."],
-              ["Pushdown","Filters run at the source; only results travel."]] },
-      ]},
-    ]},
-    { id:"process", name:"Transform & Process", tag:"making it usable", icon:"i-gear", lanes:[
-      { title:"Medallion — the refinement path", medallion:true, nodes:[
-        { name:"Bronze", tone:"bronze", desc:"As-produced, full fidelity, lineage on every row. Never altered.",
-          l2:[["Raw is sacred","Failed conformance never costs source data — Bronze holds the original truth."],["Lineage stamped","System, file, period, ingest time — on every record from the first write."]] },
-        { name:"Silver", tone:"silver", desc:"Conformed to the enterprise model: typed, deduplicated, standardised.",
-          l2:[["The enterprise model","One agreed definition of customer, account, transaction."],["Deterministic dedup","Drop / merge / prefix / quarantine — resolved by rule, never by guess."]] },
-        { name:"Gold", tone:"gold", desc:"Business marts: metrics, aggregates, compliance fields — query-ready.",
-          l2:[["Built for questions","Facts and dimensions shaped for the business — ratios, exposures, comparisons."],["Compliance-grade","IFRS 9 / Basel-style fields computed under governance, lineage to source."]] },
-      ]},
-      { title:"Compute", nodes:[
-        { name:"Spark + Photon", icon:"i-spark", spark:true, desc:"Distributed compute: describe the whole job, execute lazily, in parallel tasks.",
-          l2:[["Driver & executors","The driver plans; executors do — one brain, many hands."],
-              ["Lazy → DAG","Transformations build a graph; an action triggers it — optimized as one."],
-              ["Stages & shuffles","The DAG splits where data regroups across the cluster — the expensive part."],
-              ["Photon","A vectorized C++ engine under the same API — several times faster on SQL work."]] },
-        { name:"Databricks Workflows", icon:"i-gear", desc:"Jobs, dependencies, retries, alerts — the operational wrapper around every pipeline.",
-          l2:[["Task graphs","A job is a DAG of notebooks, pipelines, SQL — step B waits for step A."],
-              ["Right-sized compute","Policy-compliant job clusters that exist only for the run."],
-              ["Failure is loud","Retries, timeouts, alerts — nothing fails silently."]] },
-      ]},
-      { title:"Storage & format", nodes:[
-        { name:"Delta Lake", icon:"i-delta", delta:true, desc:"ACID tables on the lake: a transaction log makes files behave like a database.",
-          l2:[["ACID on object storage","Readers see complete commits or nothing; writers succeed fully or vanish."],
-              ["Time travel","Every version queryable — the table as of yesterday, or version 41."],
-              ["Schema enforcement","Non-matching writes rejected unless evolution is explicit — drift becomes a decision."],
-              ["Stream + batch, one table","A stream appends while a batch reads consistently; the log serializes them."]] },
-        { name:"ADLS Gen2", icon:"i-db", desc:"Hierarchical, cheap, durable — the physical home of every layer.",
-          l2:[["Real directories","Hierarchical namespace with atomic renames — what engines and ACLs need."],
-              ["Zones as paths","Landing, Bronze, Silver, Gold as governed hierarchies — per system, per period."]] },
-        { name:"ETL framework & mapping", icon:"i-funnel", desc:"Reusable Extract-Clean-Transform-Load components, driven by mapping metadata.",
-          l2:[["Framework, not scripts","The same components run for every system, configured by metadata."],
-              ["Mappings are metadata","Source→Bronze→Silver→Gold field maps live in config — versioned, signed off."],
-              ["Rejected-data stores","Failures land with reasons — visible, reprocessable, never dropped."],
-              ["Common services","Logging, audit, exceptions, archiving — written once, used everywhere."]] },
-      ]},
-    ]},
-    { id:"serve", name:"Serve", tag:"making it consumable", icon:"i-table", lanes:[
-      { title:"Query & warehouse", nodes:[
-        { name:"Databricks SQL", icon:"i-table", desc:"Warehouse-grade SQL directly on Gold — no copies into a separate warehouse.",
-          l2:[["Elastic warehouses","Spin up on demand, autoscale with concurrency, suspend when idle."],
-              ["Photon + caching","Vectorized execution and result caches make dashboards interactive."],
-              ["Catalog-governed","Pipeline permissions govern queries too — you see what you're granted."]] },
-        { name:"Semantic & reporting layer", icon:"i-book", desc:"Business definitions in one place — every tool sees the same truth.",
-          l2:[["Define once","A metric defined once serves every dashboard — no two NPL ratios."]] },
-      ]},
-      { title:"Sharing & interfaces", nodes:[
-        { name:"Delta Sharing", icon:"i-share", desc:"Open-protocol sharing — recipients read live tables; no copies, revocable.",
-          l2:[["Shares & recipients","A named bundle of tables, readable from any tool speaking the protocol."],
-              ["No copies drift","Recipients query the live table — no exports going stale."],
-              ["Cross-boundary","Workspaces, organizations, clouds — tenants and partners alike."]] },
-        { name:"Serving endpoints & APIs", icon:"i-api", desc:"Analytics, reports and applications consume through governed endpoints.",
-          l2:[["Governed interfaces","Every consumer authenticates; every access is auditable."]] },
-      ]},
-    ]},
-    { id:"consume", name:"Consume", tag:"where value lands", icon:"i-bars", lanes:[
-      { title:"Analytics & BI", nodes:[
-        { name:"Power BI + Copilot", icon:"i-bars", desc:"Enterprise dashboards over the semantic layer, with AI assistance on top.",
-          l2:[["Semantic models","Measures and relationships defined once — every report computes the same."],
-              ["Import vs DirectQuery","Cache for speed or query live for freshness — per workload."],
-              ["Row-level security","A viewer sees only their branch, their portfolio."]] },
-        { name:"AI/BI Genie", icon:"i-genie", desc:"Plain-language questions answered from governed data — not a chatbot's guess.",
-          l2:[["Curated spaces","Scoped to governed tables with business context — answers from those only."],
-              ["Visible SQL","The question becomes an inspectable query — trust through transparency."],
-              ["Permissions apply","No question returns data its asker couldn't query."]] },
-      ]},
-      { title:"Advanced & operational", nodes:[
-        { name:"Data science & ML", icon:"i-flask", desc:"Notebooks and models working on governed Gold and Silver data.",
-          l2:[["Same governance","Features come from cataloged tables — models auditable from data up."]] },
-        { name:"Risk & regulatory outputs", icon:"i-shield", desc:"Reports whose every figure has lineage back to a source system.",
-          l2:[["Explainable numbers","'Where did this figure come from?' has a computed answer."]] },
-      ]},
-    ]},
-  ],
-  rails: [
-    { id:"security", icon:"i-shield", name:"Security", desc:"Identity first · least privilege · secrets nowhere in code · private networking by default", nodes:[
-      { name:"Entra ID", icon:"i-person", desc:"One identity plane: SSO, MFA, service principals for every automated actor.",
-        l2:[["Machines have identities","Pipelines run as service principals — no shared accounts, no passwords in scripts."],["Groups drive access","Grants go to roles, not people — leavers become membership changes."]] },
-      { name:"Key Vault", icon:"i-key", desc:"Credentials live in the vault; code and configs hold references.",
-        l2:[["Secret scopes","Notebooks resolve secrets at runtime by name — values never in source."],["Rotate freely","Rotate in the vault; every consumer picks it up — no redeploys."]] },
-      { name:"RBAC & masking", icon:"i-lock", desc:"Least-privilege roles; sensitive fields masked for non-privileged eyes.",
-        l2:[["Rows and columns","Access rules reach inside tables — the same table answers differently per role."]] },
-      { name:"Private networking", icon:"i-net", desc:"Private endpoints, VNet peering, controlled egress — nothing rides the public internet.",
-        l2:[["Dark by default","If a path isn't explicitly provisioned, it doesn't exist."],["Network as code","Subnets, endpoints, peerings are Terraform modules — reviewable, repeatable."]] },
-    ]},
-    { id:"governance", icon:"i-book", name:"Data Governance", desc:"One catalog · lineage end-to-end · quality measured, not assumed · business owns meaning", nodes:[
-      { name:"Unity Catalog", icon:"i-book", desc:"One metastore over tables, files, models — grants, lineage, audit in one place.",
-        l2:[["Three-level namespace","catalog.schema.object — environments and domains separate cleanly."],["Automatic lineage","Table- and column-level lineage captured from real queries — never drifting docs."]] },
-      { name:"Data quality", icon:"i-check", desc:"Rules attached to data, metrics tracked over time, failures visible.",
-        l2:[["Rule types","Nulls, formats, reference checks, uniqueness, reconciliation, anomalies."],["Quarantine, not guesswork","Failed critical rules hold data for review — never silently chosen."]] },
-      { name:"Mapping & dictionary", icon:"i-map", desc:"Business decides what fields mean and require; pipelines enforce it.",
-        l2:[["The matrix workflow","Every column plotted over time; business fills required/name/type — that becomes the dictionary."]] },
-      { name:"Catalog & marketplace", icon:"i-bag", desc:"Data findable and requestable as a product, with owners and contracts.",
-        l2:[["Data as product","Owners, documentation, quality scores — shopping, not spelunking."]] },
-    ]},
-  ],
-  journeys: [
-    { name:"Historic Data Loading", icon:"i-file", stats:"535 sheets · 8 systems · 41+ GB · ~2-hour run",
-      desc:"Years of manual Excel history standardised into governed gold tables by a metadata-driven pipeline — ADF, Databricks notebooks, watermark control tables.",
-      link:{ label:"Explore the full case study →", href:"https://halkhoori2000.github.io/Historic-Data-Loading/" } },
-    { name:"Self-service sandboxes", icon:"i-gear", stats:"portal request → IaC → full platform parity",
-      desc:"Isolated environments provisioned end-to-end by Terraform + CI/CD: streaming, lake, processing, catalog, SQL — the whole architecture, miniaturised. Quotas, budget alerts, auto-suspension built in." },
-    { name:"How a delivery runs", icon:"i-clock", stats:"discovery → design → build → test → go-live",
-      desc:"Requirements traced to sources; data models agreed before pipelines; SIT → UAT → pre-prod; then a parallel run until the numbers agree — go-live is a comparison, not a leap." },
-    { name:"A record's journey", icon:"i-coin", tour:true, stats:"card tap → CDC → topic → Bronze → Silver → Gold → dashboard",
-      desc:"One payment: the core writes a row; CDC captures it; keyed to a partition; landed in Bronze with lineage; typed in Silver; aggregated in Gold; the dashboard moves. Seven hops, zero manual steps." },
-  ],
-};
+txt(world, 100, 92, "ENTERPRISE BANKING DATA PLATFORM", 34, TXT, { w:"800", ls:"0.03em" });
+el("rect", { x:100, y:106, width:300, height:4, rx:2, fill:"#2f5eb0" }, world);
+txt(world, 100, 136, "sources → ingest → transform → serve → consume · security & governance underneath", 14, MUT);
 
-/* ═══════ layout ═══════ */
-const COLW = 980, GUTTER = 130, PAD = 28, NODEW = (COLW - PAD*3) / 2;
-const COLTOP = 380;
-let colX = 140;
-const colFrames = [];
-const bgLayer = el("g", {}, world);       /* frames + flows behind */
-const midLayer = el("g", {}, world);      /* cards */
+label(100, 200, "Sources", Z.sources);
+label(640, 200, "Ingest", Z.ingest);
+label(1210, 200, "Transform & Process", Z.process);
+label(2390, 200, "Serve", Z.serve);
+label(2950, 200, "Consume", Z.consume);
 
+const srcIds = ["core","cards","payments","lending","treasury","channels","crm","risk"];
+srcIds.forEach((id, i) => piece(id, 100, 226 + i*78, 250, 64, { lv: i < 1 ? 0 : 1 }));
+piece("excel", 100, 226 + 8*78 + 26, 250, 64, { strong:true });
+piece("partner", 100, 226 + 9*78 + 26, 250, 64, { lv:1 });
 
-/* title */
+groupLabel(640, 240, "streaming · CDC", Z.ingest);
+piece("connect", 620, 252, 250, 64, { lv:1 });
+piece("kafka", 620, 350, 250, 76, { strong:true });
+piece("registry", 620, 460, 250, 58, { lv:1 });
+groupLabel(640, 572, "batch", Z.ingest);
+piece("adf", 620, 584, 250, 64);
+piece("watermark", 620, 682, 250, 58, { lv:1 });
+groupLabel(640, 794, "files & federation", Z.ingest, 1);
+piece("autoloader", 620, 806, 250, 58, { lv:1 });
+piece("federation", 620, 898, 250, 58, { lv:1 });
+
+/* Databricks container */
 {
-  txt(world, 140, 120, "ENTERPRISE BANKING DATA PLATFORM", 66, TXT, { w:"800", ls:"0.04em" });
-  rect(world, 140, 148, 560, 7, "url(#grb-ingest)", null, 3.5);
-  txt(world, 140, 205, "One governed path from dozens of source systems to every decision — streaming and batch,", 25, MUT);
-  txt(world, 140, 238, "refined through Bronze → Silver → Gold, secured and cataloged end to end.", 25, MUT);
-  let px = 140;
-  const pg = lodGroup(world, 0, 2.1);
-  for (const p of DATA.pillars){
-    const w = p.length * 14 + 62;
-    rect(pg, px, 264, w, 52, BASE, BORDER, 26);
-    el("circle", { cx: px + 26, cy: 290, r: 6, fill: "#58a6ff" }, pg);
-    txt(pg, px + 44, 298, p, 22, MUT);
-    px += w + 18;
-  }
+  const cx = 1180, cy = 232, cw = 1060, ch = 700;
+  el("rect", { x:cx, y:cy, width:cw, height:ch, rx:18, fill:"none", stroke: blend(Z.process, "#2b3444", 0.5), "stroke-width":1.4 }, world);
+  el("rect", { x:cx, y:cy, width:cw, height:44, rx:18, fill: blend(Z.process, SURF, 0.14) }, world);
+  el("rect", { x:cx, y:cy+26, width:cw, height:18, fill: blend(Z.process, SURF, 0.14) }, world);
+  icon(world, cx+16, cy+11, 22, "i-burst", Z.process);
+  txt(world, cx+48, cy+29, "Databricks — lakehouse platform", 16, TXT, { w:"700" });
+  txt(world, cx+cw-16, cy+29, "compute · pipelines · governance-native", 11, blend(Z.process,"#ffffff",0.5), { anchor:"end" });
 }
+piece("bronze", 1220, 320, 300, 70, { strong:true });
+piece("silver", 1560, 320, 300, 70, { strong:true });
+piece("gold", 1900, 320, 300, 70, { strong:true });
+piece("spark", 1220, 470, 300, 64);
+piece("dlt", 1560, 470, 300, 64, { lv:1 });
+piece("workflows", 1900, 470, 300, 64, { lv:1 });
+piece("etl", 1220, 600, 400, 64, { lv:1 });
+groupLabel(1240, 746, "storage", Z.process);
+piece("delta", 1220, 760, 300, 70, { strong:true });
+piece("adls", 1560, 760, 300, 70);
 
-/* node card */
-function drawNode(parent, x, y, node, zone, W){
-  W = W || NODEW;
-  const Z = ZONES[node.journey ? "journey" : zone];
-  const titleSize = 22, descSize = 14.5;
-  const headH = 46;
-  const descLines = linesOf(node.desc, descSize, W - 40);
-  let h = headH + 14 + descLines * descSize * 1.34 + 16;
-  const l2 = node.l2 || [];
-  const miniW = (W - 40 - 12) / 2, miniT = 8.2, miniB = 6.4;
-  const miniHs = l2.map(c => 10 + miniT*1.3 + 4 + linesOf(c[1], miniB, miniW - 16) * miniB * 1.35 + 8);
-  let l2h = 0;
-  if (l2.length){
-    for (let i = 0; i < miniHs.length; i += 2) l2h += Math.max(miniHs[i], miniHs[i+1] || 0) + 8;
-    l2h += 8;
-  }
-  const special = node.kafka ? 585 : node.delta ? 400 : node.spark ? 345 : 0;
-  const totalH = h + l2h + special;
-  POS[node.name] = { x, y, w: W, h: totalH };
+piece("dbsql", 2390, 320, 250, 70, { strong:true });
+piece("semantic", 2390, 428, 250, 58, { lv:1 });
+piece("sharing", 2390, 524, 250, 58);
+piece("endpoints", 2390, 620, 250, 58, { lv:1 });
 
-  const card = rect(parent, x, y, W, totalH, blend(Z.acc, BASE, 0.05), Z.border, 12);
-  card.classList.add("card","clickable");
-  card.style.setProperty("--acc", Z.acc);
-  card.addEventListener("click", () => flyTo(x - 50, y - 50, W + 100));
-  /* header */
-  el("path", { d:`M${x} ${y+headH} h${W}`, stroke: blend(Z.acc, BASE, 0.25), "stroke-width":1 }, parent);
-  if (node.tone){
-    /* medallion cylinder */
-    const cy = y + headH/2;
-    el("ellipse", { cx:x+26, cy:cy-7, rx:13, ry:4.5, fill:"url(#cyl-"+node.tone+")" }, parent);
-    el("path", { d:`M${x+13} ${cy-7} v12 a13 4.5 0 0 0 26 0 v-12`, fill:"url(#cyl-"+node.tone+")" }, parent);
-  } else {
-    iconChip(parent, x+26, y+headH/2, 14, node.icon || "i-gear", Z.acc);
-  }
-  txt(parent, x + 48, y + headH/2 + 7, node.name, titleSize, TXT, { w:"650" });
-  txt(parent, x + 20, y + headH + 14 + descSize, node.desc, descSize, MUT, { maxw: W - 40 });
-
-  if (l2.length){
-    const g2 = lodGroup(parent, 2.1);
-    let my = y + h, col = 0, rowH = 0;
-    l2.forEach((c, i) => {
-      const mx = x + 20 + col * (miniW + 12);
-      const mh = miniHs[i];
-      rect(g2, mx, my, miniW, mh, blend(Z.acc, BG, 0.05), blend(Z.acc, BORDER, 0.2), 7);
-      txt(g2, mx + 8, my + 8 + miniT, c[0], miniT, Z.acc, { w:"650" });
-      txt(g2, mx + 8, my + 8 + miniT*1.3 + 4 + miniB, c[1], miniB, MUT, { maxw: miniW - 16 });
-      rowH = Math.max(rowH, mh);
-      if (col === 1 || i === l2.length - 1){ my += rowH + 8; rowH = 0; }
-      col = 1 - col;
-    });
-  }
-  const deepArea = l2h + special;
-  if (deepArea > 60){
-    const gh = lodGroup(parent, 0.4, 2.1);
-    const gy = y + h + deepArea / 2;
-    const gs = Math.min(120, deepArea * 0.45);
-    const gi = icon(gh, x + W/2 - gs/2, gy - gs/2 - 12, gs, node.icon || "i-gear", Z.acc);
-    gi.setAttribute("opacity", 0.13);
-    txt(gh, x + W/2, gy + gs/2 + 6, special ? "⌕ internals · demos inside" : "⌕ internals at L2", 12, blend(Z.acc, "#ffffff", 0.4), { anchor:"middle", w:"650" });
-  }
-  if (node.kafka) deepKafka(parent, x + 20, y + h + l2h, W - 40, Z);
-  if (node.delta) deepDelta(parent, x + 20, y + h + l2h, W - 40, Z);
-  if (node.spark) deepSpark(parent, x + 20, y + h + l2h, W - 40, Z);
-  return totalH;
-}
-
-function panel(gp, x, y, w, h, title, acc, ic){
-  rect(gp, x, y, w, h, blend(acc, BG, 0.05), blend(acc, BORDER, 0.35), 8);
-  rect(gp, x, y, w, 20, blend(acc, BASE, 0.22), "none", 8);
-  rect(gp, x, y+12, w, 8, blend(acc, BASE, 0.22), "none", 0);
-  if (ic) icon(gp, x + 7, y + 3.5, 13, ic, acc);
-  txt(gp, x + (ic ? 26 : 10), y + 14.5, title, 8.5, acc, { w:"750", ls:"0.1em" });
-}
-function miniCards(gp, x, y, w, cards, tS, bS, acc){
-  const cw = (w - (cards.length - 1) * 8) / cards.length;
-  let maxH = 0;
-  cards.forEach((c, i) => {
-    const cx = x + i * (cw + 8);
-    const ch = 8 + tS*1.3 + 3 + linesOf(c[1], bS, cw - 12) * bS * 1.35 + 6;
-    rect(gp, cx, y, cw, ch, blend(acc, BASE, 0.06), "#232c3d", 5);
-    txt(gp, cx + 6, y + 6 + tS, c[0], tS, GOLD, { w:"650" });
-    txt(gp, cx + 6, y + 6 + tS*1.3 + 3 + bS, c[1], bS, MUT, { maxw: cw - 12 });
-    maxH = Math.max(maxH, ch);
-  });
-  return maxH;
-}
-function playBtn(gp, x, y, label){
-  const b = el("g", { class:"clickable playbtn" }, gp);
-  rect(b, x, y, 78, 20, "#1f6feb", "#388bfd", 6);
-  const t = txt(b, x + 39, y + 14, label, 8.5, "#fff", { anchor:"middle", w:"650" });
-  return { g: b, t };
-}
-
-/* —— deep: Kafka —— */
-function deepKafka(parent, x, y, w, Z){
-  const hintg = lodGroup(parent, 2.1, 4.2);
-  txt(hintg, x + w/2, y + 40, "▼ L3 · inside a cluster — keep zooming", 11, "rgba(230,237,243,0.5)", { anchor:"middle", w:"650" });
-  const g3 = lodGroup(parent, 4.2);
-  panel(g3, x, y, w, 262, "L3 · INSIDE A CLUSTER", Z.acc, "i-stream");
-  let yy = y + 30;
-  yy += miniCards(g3, x + 10, yy, w - 20, [
-    ["Brokers","Each broker hosts many partitions; spread a topic across brokers and no machine limits the stream."],
-    ["Leaders & followers","One leader takes reads/writes; followers replicate continuously on other brokers."],
-    ["In-sync replicas","Committed = the ISR has it. Lose the leader, an ISR member takes over — zero loss."]], 6.6, 5.1, Z.acc) + 8;
-  yy += miniCards(g3, x + 10, yy, w - 20, [
-    ["Consumer groups","Members split the partitions; each partition read by exactly one member — add consumers to scale."],
-    ["Connect workers","Connectors run as distributed tasks — sources in, sinks out."],
-    ["UAT → PROD","Connector configs, topic standards, schemas promote like code."]], 6.6, 5.1, Z.acc) + 12;
-
-  const hint4 = lodGroup(parent, 2.1, 6.5);
-  rect(hint4, x, y + 272, w, 300, "rgba(86,211,100,0.04)", "rgba(86,211,100,0.25)", 8);
-  txt(hint4, x + w/2, y + 272 + 150, "▼ L4 · the commit log — keep zooming", 10, "rgba(126,226,168,0.75)", { anchor:"middle", w:"650" });
-  const g4 = lodGroup(parent, 6.5);
-  const py = y + 272;
-  panel(g4, x, py, w, 300, "L4 · INSIDE A PARTITION — THE COMMIT LOG", "#56d364", "i-stream");
-  txt(g4, x + 10, py + 34, "The bottom of Kafka: an append-only log. Messages are numbered by offset and never modified — replication, consumers and exactly-once are built on that one idea.", 5.6, MUT, { maxw: w - 20 });
-  const dg = el("g", {}, g4);
-  const rows = [["leader", py + 74], ["follower 1", py + 124], ["follower 2", py + 174]];
-  rows.forEach(r => {
-    txt(dg, x + 12, r[1] + 15, r[0], 6, DIM, { w:"600" });
-    rect(dg, x + 64, r[1], w - 162, 24, "#0d1420", "#232c3d", 5);
-  });
-  const consText = txt(dg, x + 64, py + 220, "consumer — committed offset: · lag:", 6.2, "#56d364");
-  const keyText = txt(dg, x + 64, py + 234, "producer key → hash → partition (same key, same partition, same order)", 5.4, MUT);
-  const btn = playBtn(g4, x + w - 92, py + 64, "▶ run");
-  const strips = { l: [], f1: [], f2: [] };
-  const st = { running:false, timers:[], off:0 };
-  /* seed the log so it never looks empty at rest */
-  {
-    const colors = ["#1f6feb","#8957e5","#bf8700"], slotW = 26;
-    [["l",0],["f1",1],["f2",2]].forEach(pair => {
-      const arr = strips[pair[0]], rowY = rows[pair[1]][1];
-      for (let i = 0; i < 5; i++){
-        const m = el("g", {}, dg);
-        const gx = x + 68 + i * slotW;
-        rect(m, gx, rowY + 3, slotW - 3, 18, colors[i % 3], "none", 3);
-        txt(m, gx + (slotW-3)/2, rowY + 15.5, String(i), 6.6, "#fff", { anchor:"middle", w:"700" });
-        arr.push(m);
-      }
-    });
-    st.off = 5;
-    consText.textContent = "consumer — committed offset: 4 · lag: 0";
-  }
-  btn.g.addEventListener("click", () => {
-    if (st.running){ st.timers.forEach(t => { clearInterval(t); clearTimeout(t); }); st.timers = []; st.running = false; btn.t.textContent = "▶ run"; return; }
-    st.running = true; btn.t.textContent = "⏸ pause";
-    const colors = ["#1f6feb","#8957e5","#bf8700"], keys = ["acct-11","acct-42","acct-77"];
-    const slotW = 26, maxSlots = Math.floor((w - 174) / slotW);
-    function push(rowY, arr, off, ci){
-      const m = el("g", {}, dg);
-      const gx = x + 68 + arr.length * slotW;
-      const r = rect(m, gx, rowY + 3, slotW - 3, 18, colors[ci], "none", 3);
-      const tx = txt(m, gx + (slotW-3)/2, rowY + 15.5, String(off), 6.6, "#fff", { anchor:"middle", w:"700" });
-      arr.push(m);
-      if (arr.length > maxSlots){
-        arr.shift().remove();
-        arr.forEach((mm, i) => {
-          const rr = mm.querySelector("rect"), tt = mm.querySelector("text");
-          const nx = x + 68 + i * slotW;
-          rr.setAttribute("x", nx); tt.setAttribute("x", nx + (slotW-3)/2);
-        });
-      }
-    }
-    st.timers.push(setInterval(() => {
-      const ci = Math.floor(Math.random() * 3);
-      const myOff = st.off++;
-      keyText.textContent = `producer key ${keys[ci]} → hash → this partition · next offset: ${st.off}`;
-      push(rows[0][1], strips.l, myOff, ci);
-      st.timers.push(setTimeout(() => push(rows[1][1], strips.f1, myOff, ci), 300));
-      st.timers.push(setTimeout(() => push(rows[2][1], strips.f2, myOff, ci), 600));
-      st.timers.push(setTimeout(() => { consText.textContent = `consumer — committed offset: ${myOff} · lag: ${Math.max(0, st.off - 1 - myOff)}`; }, 1000));
-    }, 900));
-  });
-  txt(g4, x + 10, py + 258, "Segments & retention: the log is chunked on disk; old segments expire — or compact, keeping the latest message per key.", 5, DIM, { maxw: w - 20 });
-  txt(g4, x + 10, py + 276, "Replication is just consumption: followers fetch from the leader's log like any reader — one primitive everywhere.", 5, DIM, { maxw: w - 20 });
-}
-
-/* —— deep: Delta —— */
-function deepDelta(parent, x, y, w, Z){
-  const hintg = lodGroup(parent, 2.1, 4.2);
-  txt(hintg, x + w/2, y + 40, "▼ L3 · the transaction log + time travel — keep zooming", 11, "rgba(230,237,243,0.5)", { anchor:"middle", w:"650" });
-  const g = lodGroup(parent, 4.2);
-  panel(g, x, y, w, 380, "L3 · INSIDE THE TRANSACTION LOG  (_delta_log/)", GOLD, "i-delta");
-  txt(g, x + 10, y + 34, "A Delta table = parquet files + numbered JSON commits describing which files are the table at each version. Replay the log, get the state — that folder is the whole magic.", 5.6, MUT, { maxw: w - 20 });
-  let yy = y + 58;
-  yy += miniCards(g, x + 10, yy, w - 20, [
-    ["Commits as actions","Add this file, remove that one — current state = replay all commits."],
-    ["Checkpoints","Every N commits the state snapshots to parquet; readers start there."],
-    ["Optimistic concurrency","Writers prepare, then claim the next version; conflicts detected, loser retries."]], 6.6, 5.1, GOLD) + 12;
-  const fy = yy + 8;
-  txt(g, x + 10, fy, "data files", 6, DIM, { w:"600" });
-  txt(g, x + w/2 + 6, fy, "_delta_log/", 6, DIM, { w:"600" });
-  rect(g, x + 10, fy + 6, w/2 - 22, 124, "#0d1420", "#232c3d", 5);
-  rect(g, x + w/2 + 6, fy + 6, w/2 - 22, 124, "#0d1420", "#232c3d", 5);
-  const btn = playBtn(g, x + w - 92, y + 26, "▶ run");
-  const verLabel = txt(g, x + 10, fy + 150, "version — (◀ ▶ to time-travel after running)", 6.6, GOLD);
-  const navL = el("g", { class:"clickable" }, g); rect(navL, x + w - 92, fy + 138, 36, 17, BASE, BORDER, 5); txt(navL, x + w - 74, fy + 150.5, "◀", 8.5, "#58a6ff", { anchor:"middle" });
-  const navR = el("g", { class:"clickable" }, g); rect(navR, x + w - 50, fy + 138, 36, 17, BASE, BORDER, 5); txt(navR, x + w - 32, fy + 150.5, "▶", 8.5, "#58a6ff", { anchor:"middle" });
-  const state = [], allFiles = [], fileEls = {};
-  let fileNo = 0, shownVer = -1, logCount = 0, step = 0, running = false, timer = null;
-  const acts = [
-    { a:"add", n:2, note:"batch insert" }, { a:"add", n:1, note:"stream append" },
-    { a:"opt", note:"OPTIMIZE — compact" }, { a:"add", n:1, note:"late data" },
-    { a:"chk", note:"checkpoint" }, { a:"add", n:2, note:"stream append" } ];
-  function logLine(name, detail, color){
-    if (logCount >= 8) return;
-    txt(g, x + w/2 + 12, fy + 22 + logCount * 14, name + "  " + detail, 5.2, color);
-    logCount++;
-  }
-  function addChip(name){
-    const idx = allFiles.length;
-    const cw3 = (w/2 - 40) / 3;
-    const fx = x + 16 + (idx % 3) * (cw3 + 4), fyy = fy + 14 + Math.floor(idx / 3) * 21;
-    const gEl = el("g", {}, g);
-    rect(gEl, fx, fyy, cw3, 16, BASE, "#7d8590", 3);
-    icon(gEl, fx + 3, fyy + 2.5, 10, "i-file", "#93a1b3");
-    txt(gEl, fx + 15, fyy + 11.5, name, 4.9, MUT);
-    fileEls[name] = gEl; allFiles.push(name);
-  }
-  function renderVer(v){
-    shownVer = v;
-    const vis = new Set(state[v]);
-    allFiles.forEach(f => fileEls[f].setAttribute("opacity", vis.has(f) ? 1 : 0.22));
-    verLabel.textContent = `version ${v}` + (v < state.length - 1 ? " (time travel — old files exist until VACUUM)" : " (current)");
-  }
-  btn.g.addEventListener("click", () => {
-    if (running){ clearInterval(timer); running = false; btn.t.textContent = "▶ run"; return; }
-    if (step >= acts.length) return;
-    running = true; btn.t.textContent = "⏸";
-    timer = setInterval(() => {
-      if (step >= acts.length){ clearInterval(timer); running = false; btn.t.textContent = "done"; return; }
-      const a = acts[step++];
-      const prev = state.length ? state[state.length-1].slice() : [];
-      if (a.a === "add"){
-        const added = [];
-        for (let i = 0; i < a.n; i++){ const nm = "part-" + String(fileNo++).padStart(3,"0"); added.push(nm); addChip(nm); }
-        state.push(prev.concat(added));
-        logLine("0000" + (state.length-1) + ".json", "add " + added.join(", ") + " · " + a.note, "#56d364");
-      } else if (a.a === "opt"){
-        const nm = "part-" + String(fileNo++).padStart(3,"0"); addChip(nm);
-        state.push([nm]);
-        logLine("0000" + (state.length-1) + ".json", "remove " + prev.length + " files, add " + nm + " · " + a.note, "#f47067");
-      } else {
-        state.push(prev);
-        logLine("checkpoint.parquet", "state snapshot at commit " + (state.length-1), GOLD);
-      }
-      renderVer(state.length - 1);
-    }, 1000);
-  });
-  navL.addEventListener("click", () => { if (shownVer > 0) renderVer(shownVer - 1); });
-  navR.addEventListener("click", () => { if (shownVer < state.length - 1) renderVer(shownVer + 1); });
-}
-
-/* —— deep: Spark —— */
-function deepSpark(parent, x, y, w, Z){
-  const hintg = lodGroup(parent, 2.1, 4.2);
-  txt(hintg, x + w/2, y + 40, "▼ L3 · stages, shuffles, tasks — keep zooming", 11, "rgba(230,237,243,0.5)", { anchor:"middle", w:"650" });
-  const g = lodGroup(parent, 4.2);
-  panel(g, x, y, w, 325, "L3 · A JOB EXECUTING — STAGES, SHUFFLES, TASKS", Z.acc, "i-spark");
-  txt(g, x + 10, y + 34, "The driver splits the plan into stages at shuffle boundaries — where data must regroup across the cluster. Each stage runs as parallel tasks, one per partition.", 5.6, MUT, { maxw: w - 20 });
-  const stW = (w - 20 - 44) / 3;
-  const stages = [
-    { label:"Stage 1 · read + filter", sub:"narrow — no movement", n:8 },
-    { label:"Stage 2 · join", sub:"after SHUFFLE ⇄", n:6 },
-    { label:"Stage 3 · aggregate + write", sub:"after 2nd shuffle", n:4 },
-  ];
-  const boxes = [];
-  stages.forEach((s, i) => {
-    const sx = x + 10 + i * (stW + 22);
-    const bg = rect(g, sx, y + 52, stW, 122, "#0d1420", "#232c3d", 7);
-    txt(g, sx + 8, y + 68, s.label, 6.6, TXT, { w:"650" });
-    txt(g, sx + 8, y + 80, s.sub, 5, DIM);
-    const tasks = [];
-    for (let t = 0; t < s.n; t++)
-      tasks.push(rect(g, sx + 8 + (t % 4) * 17, y + 90 + Math.floor(t / 4) * 17, 13, 13, "#1c2433", "none", 3));
-    boxes.push({ bg, tasks });
-    if (i < 2) txt(g, sx + stW + 6, y + 116, "⇄", 11, "#f47067", { w:"700" });
-  });
-  const note = txt(g, x + 10, y + 196, "Press ▶ to run the job.", 5.6, MUT, { maxw: w - 20 });
-  txt(g, x + 10, y + 228, "Photon: the same plan executes on a vectorized C++ engine over columnar batches — several times faster on SQL-shaped work, zero code change.", 5.1, DIM, { maxw: w - 20 });
-  txt(g, x + 10, y + 256, "Fewer shuffles = faster jobs: filter early, broadcast small tables, partition on join keys.", 5.1, DIM, { maxw: w - 20 });
-  const btn = playBtn(g, x + w - 92, y + 26, "▶ run");
-  let running = false;
-  btn.g.addEventListener("click", () => {
-    if (running) return;
-    running = true;
-    boxes.forEach(b => { b.bg.setAttribute("stroke", "#232c3d"); b.tasks.forEach(t => t.setAttribute("fill", "#1c2433")); });
-    let si = 0;
-    (function runStage(){
-      if (si >= boxes.length){ running = false; btn.t.textContent = "▶ again"; note.textContent = "Done — 3 stages, 2 shuffles, 18 tasks."; return; }
-      const stg = boxes[si];
-      stg.bg.setAttribute("stroke", "#1f6feb");
-      note.textContent = si === 0 ? "Stage 1: every task reads & filters its own partition — fully parallel." :
-        si === 1 ? "Shuffle: rows regroup by join key across the cluster — then stage 2 joins." :
-        "Second shuffle groups by aggregation key; stage 3 aggregates and writes.";
-      let done = 0;
-      stg.tasks.forEach(t => {
-        const start = 150 + Math.random() * 800;
-        setTimeout(() => t.setAttribute("fill", "#f0883e"), start);
-        setTimeout(() => { t.setAttribute("fill", "#56d364"); done++;
-          if (done === stg.tasks.length){ stg.bg.setAttribute("stroke", "#56d364"); si++; setTimeout(runStage, 300); } }, start + 450 + Math.random() * 550);
-      });
-    })();
-  });
-}
-
-/* stat pills (drawn later once worldW is known) */
-function drawStats(worldW){
-  const stats = [["i-map","30+ explorable components"],["i-layers","4 zoom levels · L0 → L4"],["i-burst","3 live internals demos"],["i-stream","streaming + batch + files"]];
-  let sx = worldW - 140;
-  for (let i = stats.length - 1; i >= 0; i--){
-    const s = stats[i];
-    const w = s[1].length * 14 + 92;
-    sx -= w + 24;
-    rect(world, sx, 96, w, 62, "rgba(19,25,36,0.85)", BORDER, 31);
-    iconChip(world, sx + 32, 127, 15, s[0], "#79c0ff");
-    txt(world, sx + 56, 136, s[1], 26, MUT, { w:"600" });
-  }
-}
-
-/* draw the five columns */
-const colBottoms = [];
-DATA.columns.forEach((col, ci) => {
-  const gx = colX;
-  const Z = ZONES[col.id];
-  /* content */
-  let y = COLTOP + 120;
-  const laneG = lodGroup(midLayer, 0.5);
-  for (const lane of col.lanes){
-    el("circle", { cx: gx + 5, cy: y + 9, r: 4, fill: Z.acc }, laneG);
-    txt(laneG, gx + 18, y + 14, lane.title.toUpperCase(), 14.5, blend(Z.acc, "#ffffff", 0.75), { ls:"0.12em", w:"700" });
-    y += 36;
-    let colI = 0, rowMax = 0, rowY = y;
-    if (lane.medallion){
-      const AG = 46, mw = (COLW - PAD - 2*AG - 2*PAD) / 3;
-      let mMax = 0;
-      lane.nodes.forEach((node, ni) => {
-        const nx = gx + ni * (mw + AG);
-        const h = drawNode(laneG, nx, rowY, node, col.id, mw);
-        mMax = Math.max(mMax, h);
-        if (ni < 2) txt(laneG, nx + mw + AG/2, rowY + 30, "→", 26, ZONES[col.id].acc, { anchor:"middle", w:"800" });
-      });
-      y = rowY + mMax + PAD + 14;
-    } else {
-    lane.nodes.forEach((node, ni) => {
-      const nx = gx + colI * (NODEW + PAD);
-      const h = drawNode(laneG, nx, rowY, node, col.id);
-      rowMax = Math.max(rowMax, h);
-      colI++;
-      if (colI === 2 || ni === lane.nodes.length - 1){ rowY += rowMax + PAD; colI = 0; rowMax = 0; }
-    });
-    y = rowY + 14;
-    }
-  }
-  colBottoms.push(y);
-  /* low-zoom chip list */
-  const chipG = lodGroup(midLayer, 0, 0.5);
-  const allNodes = col.lanes.flatMap(l => l.nodes);
-  const chips = allNodes.slice(0, 6);
-  const availH = (y - 40) - (COLTOP + 140);
-  const step = Math.max(84, Math.min(160, availH / (chips.length + 1)));
-  let cy = COLTOP + 140;
-  for (const n of chips){
-    const w = Math.min(NODEW * 2 + PAD, n.name.length * 19 + 120);
-    rect(chipG, gx, cy, w, 72, blend(Z.acc, BASE, 0.07), blend(Z.acc, BORDER, 0.25), 14);
-    iconChip(chipG, gx + 35, cy + 36, 17, n.icon || "i-gear", Z.acc);
-    txt(chipG, gx + 62, cy + 44, n.name, 32, blend(Z.acc, "#ffffff", 0.88), { w:"650" });
-    cy += step;
-  }
-  if (allNodes.length > 6) txt(chipG, gx + 8, cy + 14, "+ " + (allNodes.length - 6) + " more inside", 24, blend(Z.acc, "#ffffff", 0.5), { w:"600" });
-  txt(chipG, gx + 8, Math.min(cy + 58, y - 20), "⌕ zoom in to open", 20, blend(Z.acc, "#ffffff", 0.4), { w:"600" });
-  colX += COLW + GUTTER;
-});
-
-const worldW = colX - GUTTER + 140;
-const maxColBottom = Math.max(...colBottoms) + 40;
-
-/* column frames + banners + flow arrows (behind content) */
-{
-  let fx = 140;
-  DATA.columns.forEach((col, ci) => {
-    const Z = ZONES[col.id];
-    const colH = colBottoms[ci] - COLTOP + 60;
-    const frame = rect(bgLayer, fx - 34, COLTOP - 10, COLW, colH, blend(Z.acc, BG, 0.028), blend(Z.acc, BORDER, 0.28), 20);
-    FRAMES.push({ x: fx - 34, y: COLTOP - 10, w: COLW, h: colH, c: Z.acc });
-    /* banner */
-    rect(bgLayer, fx - 34, COLTOP - 10, COLW, 92, "url(#grb-" + col.id + ")", "none", 20);
-    rect(bgLayer, fx - 34, COLTOP + 58, COLW, 24, "url(#grb-" + col.id + ")", "none", 0);
-    el("circle", { cx: fx + 8, cy: COLTOP + 36, r: 25, fill: "rgba(10,14,20,0.35)" }, bgLayer);
-    icon(bgLayer, fx - 9, COLTOP + 19, 34, col.icon, "#ffffff");
-    txt(bgLayer, fx + 48, COLTOP + 30, String(ci + 1).padStart(2,"0") + " · " + col.tag.toUpperCase(), 15, "rgba(255,255,255,0.75)", { ls:"0.16em", w:"700" });
-    txt(bgLayer, fx + 48, COLTOP + 64, col.name, 40, "#ffffff", { w:"800" });
-    /* flow connector: rounded elbow + numbered story label */
-    if (ci < DATA.columns.length - 1){
-      const FLOWS = ["① capture", "② refine", "③ publish", "④ decide"];
-      const x1 = fx - 34 + COLW, x2 = x1 + GUTTER;
-      const ym = COLTOP + 36;
-      const p = el("path", { d:`M${x1+6} ${ym} h${GUTTER*0.28} q10 0 10 -10 v-14 q0 -10 10 -10 h${GUTTER*0.18} q10 0 10 10 v14 q0 10 10 10 h${GUTTER*0.16}`,
-        stroke: blend(Z.acc, "#ffffff", 0.42), "stroke-width":5, fill:"none", "marker-end":"url(#arr)" }, bgLayer);
-      p.classList.add("flowline");
-      const lw = 156;
-      rect(bgLayer, x1 + GUTTER/2 - lw/2, ym - 76, lw, 40, "rgba(10,14,20,0.88)", blend(Z.acc, BORDER, 0.45), 20);
-      txt(bgLayer, x1 + GUTTER/2, ym - 49, FLOWS[ci], 20, blend(Z.acc, "#ffffff", 0.8), { anchor:"middle", w:"700" });
-    }
-    fx += COLW + GUTTER;
-  });
-  const mk = el("marker", { id:"arr", viewBox:"0 0 10 10", refX:8, refY:5, markerWidth:5, markerHeight:5, orient:"auto-start-reverse" }, defs);
-  el("path", { d:"M0 0L10 5L0 10z", fill:"#9fb6d4" }, mk);
-}
+piece("powerbi", 2950, 320, 260, 70, { strong:true });
+piece("genie", 2950, 428, 260, 58);
+piece("ds", 2950, 524, 260, 58, { lv:1 });
+piece("riskout", 2950, 620, 260, 58, { lv:1 });
 
 /* rails */
-let railY = maxColBottom + 120;
-for (const rail of DATA.rails){
-  const Z = ZONES[rail.id];
-  rect(bgLayer, 106, railY, worldW - 246, 340, blend(Z.acc, BG, 0.035), blend(Z.acc, BORDER, 0.3), 18);
-  FRAMES.push({ x: 106, y: railY, w: worldW - 246, h: 340, c: Z.acc });
-  rect(bgLayer, 106, railY, 14, 340, Z.acc, "none", 7);
-  el("circle", { cx: 168, cy: railY + 56, r: 26, fill: blend(Z.acc, BASE, 0.18) }, world);
-  icon(world, 150, railY + 38, 36, rail.icon, Z.acc);
-  txt(world, 212, railY + 50, rail.name.toUpperCase(), 34, blend(Z.acc, "#ffffff", 0.85), { w:"800", ls:"0.06em" });
-  txt(world, 212, railY + 84, rail.desc, 17, MUT);
-  const rc = lodGroup(world, 0, 0.5);
-  {
-    const bw = worldW - 246;
-    rail.nodes.forEach((n, i) => {
-      const cx = 106 + bw * 0.3 + i * (bw * 0.62 / 4);
-      iconChip(rc, cx, railY + 60, 22, n.icon, Z.acc);
-      txt(rc, cx + 36, railY + 72, n.name, 34, blend(Z.acc, "#ffffff", 0.8), { w:"650" });
-    });
-  }
-  const rg = lodGroup(world, 0.5);
-  const bandW = worldW - 246, rw = 1080, rgap = (bandW - 4 * rw) / 5;
-  rail.nodes.forEach((n, i) => {
-    const rx = 106 + rgap + i * (rw + rgap), ry = railY + 108;
-    const card = rect(rg, rx, ry, rw, 208, blend(Z.acc, BASE, 0.05), blend(Z.acc, BORDER, 0.3), 12);
-    card.classList.add("card"); card.style.setProperty("--acc", Z.acc);
-    iconChip(rg, rx + 34, ry + 34, 18, n.icon, Z.acc);
-    txt(rg, rx + 62, ry + 42, n.name, 25, TXT, { w:"650" });
-    txt(rg, rx + 22, ry + 80, n.desc, 16, MUT, { maxw: rw - 44 });
-    if (n.l2){
-      const g2 = lodGroup(rg, 2.1);
-      let my = ry + 128;
-      n.l2.forEach(c => {
-        txt(g2, rx + 22, my, "▸ " + c[0] + " — " + c[1], 9.5, MUT, { maxw: rw - 44 });
-        my += linesOf("▸ " + c[0] + " — " + c[1], 9.5, rw - 44) * 12.8 + 8;
-      });
-    }
-  });
-  railY += 380;
+function rail(y, zone, name, ic, ids){
+  const acc = Z[zone];
+  el("rect", { x:100, y, width:3110, height:112, rx:14, fill: blend(acc, BG, 0.04), stroke: blend(acc, "#2b3444", 0.45), "stroke-width":1.2 }, edgeLayer);
+  el("rect", { x:100, y, width:8, height:112, rx:4, fill:acc }, edgeLayer);
+  icon(world, 128, y+22, 22, ic, acc);
+  txt(world, 162, y+38, name.toUpperCase(), 15, blend(acc,"#ffffff",0.8), { w:"800", ls:"0.1em" });
+  ids.forEach((id, i) => piece(id, 640 + i*640, y+24, 250, 64, { lv: i > 1 ? 1 : 0 }));
 }
+rail(1050, "security", "Security", "i-shield", ["entra","keyvault","rbac","network"]);
+rail(1192, "governance", "Governance", "i-book", ["unity","dq","mapping","marketplace"]);
 
 /* journeys */
-{
-  el("circle", { cx: 128, cy: railY + 34, r: 6, fill: "#56d364" }, world);
-  txt(world, 148, railY + 42, "JOURNEYS — THE PLATFORM AT WORK", 26, "#7ee2a8", { w:"800", ls:"0.12em" });
-  const jw = (worldW - 280 - 3 * 40) / 4;
-  DATA.journeys.forEach((j, i) => {
-    const jx = 140 + i * (jw + 40), jy = railY + 66;
-    const Z = ZONES.journey;
-    const card = rect(world, jx, jy, jw, 310, blend(Z.acc, BASE, 0.05), blend(Z.acc, BORDER, 0.35), 14);
-    if (i === 0) FRAMES.push({ x: 140, y: jy, w: worldW - 280, h: 310, c: "#56d364" });
-    card.classList.add("card"); card.style.setProperty("--acc", Z.acc);
-    const jl0 = lodGroup(world, 0, 0.5);
-    const jl1 = lodGroup(world, 0.5);
-    if (j.tour){
-      card.classList.add("clickable");
-      card.addEventListener("click", startTour);
-      txt(jl1, jx + 24, jy + 230, "▶ click for a guided tour across the map", 16, "#7ee2a8", { w:"650" });
-      txt(jl0, jx + jw/2, jy + 274, "▶ click for a guided tour", 24, "#7ee2a8", { anchor:"middle", w:"650" });
-    }
-    iconChip(jl0, jx + jw/2, jy + 100, 34, j.icon, Z.acc);
-    txt(jl0, jx + jw/2, jy + 185, j.name, 46, TXT, { anchor:"middle", w:"750" });
-    txt(jl0, jx + jw/2, jy + 232, j.stats, 26, GOLD, { anchor:"middle", w:"600" });
-    iconChip(jl1, jx + 38, jy + 40, 20, j.icon, Z.acc);
-    txt(jl1, jx + 70, jy + 48, j.name, 30, TXT, { w:"750" });
-    el("circle", { cx: jx + jw - 32, cy: jy + 38, r: 16, fill: blend(Z.acc, BASE, 0.25) }, jl1);
-    txt(jl1, jx + jw - 32, jy + 45, String(i+1), 18, "#7ee2a8", { anchor:"middle", w:"800" });
-    rect(jl1, jx + 20, jy + 66, jw - 40, 34, blend(Z.acc, BG, 0.08), "none", 8);
-    txt(jl1, jx + 34, jy + 90, j.stats, 17, GOLD, { w:"600" });
-    const jg = lodGroup(world, 0.5);
-    txt(jg, jx + 24, jy + 134, j.desc, 17, MUT, { maxw: jw - 48 });
-    if (j.link){
-      const a = el("a", { href: j.link.href, target:"_blank" }, jg);
-      const lg = el("g", { class:"clickable" }, a);
-      rect(lg, jx + 20, jy + 244, jw - 40, 42, blend(Z.acc, BG, 0.12), Z.acc, 10);
-      txt(lg, jx + jw/2, jy + 272, j.link.label, 18, "#7ee2a8", { anchor:"middle", w:"650" });
-    }
-  });
-}
-
-/* =============== guided tour =============== */
-const TOUR = [
-  ["Core banking", "23:41 - a customer taps their card. The core banking system writes one database row. Nobody will touch this record by hand again."],
-  ["Confluent Kafka", "Within moments, CDC reads the change from the database's own log and publishes it as an event - keyed by account, so this account's events stay in perfect order."],
-  ["Delta Lake", "A sink connector lands it in Bronze - exactly as produced, with lineage stamped: system, file, time. Raw is sacred."],
-  ["Silver", "Conformance: typed, deduplicated, mapped to the enterprise model. The record now speaks the bank's one shared language."],
-  ["Gold", "Aggregation: it joins the day's spending metrics and risk features - business meaning, applied last."],
-  ["Databricks SQL", "The warehouse serves the updated Gold table - no copies, straight off the lakehouse."],
-  ["Power BI + Copilot", "...and the dashboard tile moves. Seven hops, zero manual steps, full lineage - the platform's whole promise in one record."],
+label(100, 1382, "Journeys — the platform at work", Z.journey);
+const JOURNEYS = [
+  { icon:"i-file", name:"Historic Data Loading", stats:"535 sheets · 8 systems · 41+ GB · ~2-hour run",
+    desc:"Manual Excel history standardised into governed gold tables — ADF, notebooks, watermarks.",
+    link:{ label:"Open the case study →", href:"https://halkhoori2000.github.io/Historic-Data-Loading/" } },
+  { icon:"i-gear", name:"Self-service sandboxes", stats:"portal → Terraform IaC → full parity",
+    desc:"Isolated platform replicas provisioned end-to-end by code — quotas, budgets, auto-suspend built in." },
+  { icon:"i-clock", name:"How a delivery runs", stats:"discovery → design → build → test → go-live",
+    desc:"Models agreed before pipelines; parallel run before cutover — go-live is a comparison, not a leap." },
+  { icon:"i-coin", name:"A record's journey", stats:"tap → CDC → topic → Bronze → Gold → dashboard",
+    desc:"Follow one payment across the map, tool by tool.", tour:true },
 ];
-let tourIdx = -1, tourTimer = null;
-function showTourStep(){
-  const step = TOUR[tourIdx];
-  const p = POS[step[0]];
-  if (p) flyTo(p.x - p.w * 0.18, p.y - p.h * 0.1, p.w * 1.35);
-  document.getElementById("tour-step").textContent = "A RECORD'S JOURNEY - STOP " + (tourIdx + 1) + " OF " + TOUR.length + " : " + step[0].toUpperCase();
-  document.getElementById("tour-text").textContent = step[1];
-  document.getElementById("tour-next").textContent = tourIdx === TOUR.length - 1 ? "finish" : "next";
-  clearTimeout(tourTimer);
-  tourTimer = setTimeout(nextTourStep, 7000);
-}
-function nextTourStep(){
-  tourIdx++;
-  if (tourIdx >= TOUR.length) return endTour();
-  showTourStep();
-}
-function startTour(e){
-  if (e) e.stopPropagation();
-  document.getElementById("tour").style.display = "block";
-  tourIdx = -1;
-  nextTourStep();
-}
-function endTour(){
-  clearTimeout(tourTimer);
-  document.getElementById("tour").style.display = "none";
-  tourIdx = -1;
-  fitAll();
-}
-document.getElementById("tour-next").addEventListener("click", nextTourStep);
-document.getElementById("tour-end").addEventListener("click", endTour);
+JOURNEYS.forEach((j, i) => {
+  const jx = 100 + i * 800, jy = 1402, jw = 740, jh = 132;
+  const g = el("g", { class:"piece clickable" }, pieceLayer);
+  el("rect", { x:jx, y:jy, width:jw, height:jh, rx:14, fill: blend(Z.journey, SURF, 0.06), stroke: blend(Z.journey, "#2b3444", 0.5), "stroke-width":1.2, class:"pbg" }, g);
+  el("rect", { x:jx+14, y:jy+16, width:34, height:34, rx:10, fill: blend(Z.journey, SURF, 0.2) }, g);
+  icon(g, jx+21, jy+23, 20, j.icon, Z.journey);
+  txt(g, jx+60, jy+38, j.name, 18, TXT, { w:"750" });
+  txt(g, jx+60, jy+60, j.stats, 12, "#eac54f", { w:"600" });
+  txt(g, jx+16, jy+92, j.desc, 12, MUT);
+  if (j.link) txt(g, jx+16, jy+116, j.link.label, 12.5, "#7ee2a8", { w:"650" });
+  if (j.tour) txt(g, jx+16, jy+116, "▶ start the guided tour", 12.5, "#7ee2a8", { w:"650" });
+  g.addEventListener("click", () => { if (j.tour) startTour(); else if (j.link) window.open(j.link.href, "_blank"); });
+});
 
-/* ═══════ viewport ═══════ */
+/* ═══════ edges ═══════ */
+function edge(a, b, opts){
+  opts = opts || {};
+  const A = P[a], B = P[b];
+  let d;
+  if (opts.v){
+    const down = B.y > A.y;
+    const ax = A.x + A.w/2, ay = down ? A.y + A.h : A.y, by = down ? B.y : B.y + B.h;
+    d = `M${ax} ${ay} L${B.x + B.w/2} ${by - (down ? 4 : -4)}`;
+  } else {
+    const ay = A.y + A.h/2 + (opts.ao || 0), by = B.y + B.h/2 + (opts.bo || 0);
+    const ax = A.x + A.w, bx = B.x;
+    const mid = opts.mid != null ? opts.mid : (ax + bx) / 2;
+    d = `M${ax} ${ay} H${mid} V${by} H${bx - 4}`;
+  }
+  const p = el("path", { d, fill:"none", stroke: opts.c || "#5f7391", "stroke-width": opts.wd || 2.2, "marker-end":"url(#arr)" }, edgeLayer);
+  if (opts.dash) p.setAttribute("stroke-dasharray", "7 6");
+  if (opts.lv) p.dataset.lv = opts.lv;
+  return p;
+}
+const CI = blend(Z.ingest, "#5f7391", 0.5), CP = blend(Z.process, "#5f7391", 0.5), CS = blend(Z.serve, "#5f7391", 0.5);
+edge("core", "connect", { mid: 480, c: CI });
+edge("cards", "connect", { mid: 468, c: CI, lv:1 });
+edge("payments", "connect", { mid: 456, c: CI, lv:1 });
+edge("channels", "connect", { mid: 444, c: CI, lv:1 });
+edge("connect", "kafka", { v:true, c: CI, lv:1 });
+edge("registry", "kafka", { v:true, dash:true, c: CI, lv:1 });
+edge("kafka", "bronze", { c: CI, wd: 3, mid: 1000 });
+edge("lending", "adf", { mid: 500, c: CI, lv:1 });
+edge("treasury", "adf", { mid: 488, c: CI, lv:1 });
+edge("crm", "adf", { mid: 476, c: CI, lv:1 });
+edge("excel", "adf", { mid: 464, c: CI });
+edge("partner", "autoloader", { mid: 452, c: CI, lv:1 });
+edge("watermark", "adf", { v:true, dash:true, c: CI, lv:1 });
+edge("adf", "bronze", { c: CI, wd: 3, mid: 1035, bo: 10 });
+edge("autoloader", "bronze", { c: CI, mid: 1065, bo: 20, lv:1 });
+edge("bronze", "silver", { c: CP, wd: 3.2 });
+edge("silver", "gold", { c: CP, wd: 3.2 });
+edge("delta", "bronze", { v:true, dash:true, c: CP, lv:1 });
+edge("adls", "silver", { v:true, dash:true, c: CP, lv:1 });
+edge("gold", "dbsql", { c: CP, wd: 3 });
+edge("gold", "sharing", { c: CP, mid: 2300, bo: 0, lv:1 });
+edge("dbsql", "powerbi", { c: CS, wd: 3 });
+edge("dbsql", "genie", { c: CS, mid: 2790, lv:1 });
+edge("sharing", "endpoints", { v:true, c: CS, lv:1 });
+edge("dbsql", "ds", { c: CS, mid: 2830, lv:1 });
+
+const worldW = 3320, worldH = 1600;
+
+/* ═══════ levels ═══════ */
+let level = 1, selected = null;
+function maxDepth(id){ const d = NODES[id]; return d.deepest ? 4 : d.deep ? 3 : 2; }
+function setLevel(n){
+  level = n;
+  document.querySelectorAll("#levels button").forEach(b => b.classList.toggle("active", +b.dataset.lv === n));
+  const showLv1 = n >= 1;
+  svg.querySelectorAll("[data-lv='1']").forEach(e => { e.style.display = showLv1 ? "" : "none"; });
+  if (n >= 2){
+    const id = selected || "kafka";
+    select(id, Math.min(n, maxDepth(id)));
+  } else closeDrawer();
+}
+document.querySelectorAll("#levels button").forEach(b => b.addEventListener("click", () => setLevel(+b.dataset.lv)));
+
+/* ═══════ drawer ═══════ */
+const drawer = $("#drawer");
+function select(id, depth){
+  selected = id;
+  document.querySelectorAll(".piece").forEach(p => p.classList.toggle("selected", p.dataset.id === id));
+  openDrawer(id, depth || 2);
+  const p = P[id];
+  if (p) flyTo(p.x + p.w/2 - vb.w*0.33, Math.max(-20, p.y + p.h/2 - (vb.w*vh()/vw())/2), vb.w);
+}
+function closeDrawer(){ drawer.classList.remove("open"); document.querySelectorAll(".piece.selected").forEach(p => p.classList.remove("selected")); selected = null; }
+$("#d-close").addEventListener("click", closeDrawer);
+document.querySelectorAll("#d-tabs button").forEach(b => b.addEventListener("click", () => { if (!b.disabled && selected) openDrawer(selected, +b.dataset.d); }));
+
+function openDrawer(id, depth){
+  const d = NODES[id], acc = Z[d.zone];
+  depth = Math.min(depth || 2, maxDepth(id));
+  drawer.classList.add("open");
+  $("#d-ic").style.background = blend(acc, SURF, 0.22);
+  $("#d-ic").innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="${acc}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${document.getElementById(d.icon).innerHTML}</svg>`;
+  $("#d-name").textContent = d.name;
+  $("#d-zone").textContent = d.zone; $("#d-zone").style.color = acc;
+  document.querySelectorAll("#d-tabs button").forEach(b => {
+    const dep = +b.dataset.d;
+    b.disabled = dep > maxDepth(id);
+    b.classList.toggle("active", dep === depth);
+    if (dep === 3) b.textContent = id === "delta" ? "L3 · the log" : id === "spark" ? "L3 · a job runs" : "L3 · mechanics";
+  });
+  const esc = s => String(s).replace(/</g,"&lt;");
+  let h = `<div class="d-desc">${esc(d.desc)}</div>`;
+  h += `<div class="d-sec">L2 · HOW IT'S ORGANIZED</div><div class="d-cards">` +
+       d.l2.map(c => `<div class="d-card"><h5 style="color:${acc}">${esc(c[0])}</h5><p>${esc(c[1])}</p></div>`).join("") + `</div>`;
+  if (d.link) h += `<div class="d-note"><a href="${d.link.href}" target="_blank" style="color:#7ee2a8">${esc(d.link.label)}</a></div>`;
+  if (depth >= 3 && id === "kafka"){
+    h += `<div class="d-sec">L3 · INSIDE A CLUSTER</div><div class="d-cards">
+      <div class="d-card"><h5 style="color:${acc}">Brokers</h5><p>Each broker hosts many partitions — spread a topic and no machine limits the stream.</p></div>
+      <div class="d-card"><h5 style="color:${acc}">Leaders & ISR</h5><p>One leader takes writes; in-sync replicas copy it continuously. Lose the leader — an ISR member takes over, zero loss.</p></div>
+      <div class="d-card"><h5 style="color:${acc}">Consumer groups</h5><p>Partitions split across members; one partition, one reader at a time. Offsets = resume points.</p></div>
+      <div class="d-card"><h5 style="color:${acc}">Connect & Registry</h5><p>Connectors as tasks on worker fleets; schemas and configs promoted UAT → PROD like code.</p></div></div>`;
+  }
+  if (depth >= 4 && id === "kafka"){
+    h += `<div class="d-sec">L4 · INSIDE A PARTITION — THE COMMIT LOG</div>
+      <div class="d-note">An append-only log: messages numbered by offset, never modified. Replication, consumers, exactly-once — all built on that one idea. Segments expire or compact (latest per key); followers are just readers of the leader's log.</div>
+      <button class="btn d-run" id="demo-kafka">▶ run the log</button>
+      <div class="k-row"><div class="k-lab">leader</div><div class="k-strip" id="ks-l"></div></div>
+      <div class="k-row"><div class="k-lab">follower 1</div><div class="k-strip" id="ks-1"></div></div>
+      <div class="k-row"><div class="k-lab">follower 2</div><div class="k-strip" id="ks-2"></div></div>
+      <div class="k-meta" id="k-meta">consumer — committed offset: 4 · lag: 0</div>`;
+  }
+  if (depth >= 3 && id === "delta"){
+    h += `<div class="d-sec">L3 · INSIDE THE TRANSACTION LOG (_delta_log/)</div>
+      <div class="d-note">Parquet files + numbered JSON commits describing which files are the table at each version. Replay the log, get the state. Checkpoints let readers skip the replay; writers claim versions optimistically — conflicts detected, loser retries.</div>
+      <button class="btn d-run" id="demo-delta">▶ run commits</button>
+      <div class="dl-grid"><div class="dl-pane"><h6>data files</h6><div id="dl-files"></div></div>
+      <div class="dl-pane"><h6>_delta_log/</h6><div id="dl-log"></div></div></div>
+      <div class="dl-nav"><button class="hudbtn" id="dl-prev">◀</button><button class="hudbtn" id="dl-next">▶</button><span id="dl-ver">version — (time travel after running)</span></div>`;
+  }
+  if (depth >= 3 && id === "spark"){
+    h += `<div class="d-sec">L3 · A JOB EXECUTING</div>
+      <div class="d-note">The driver splits the plan into stages at shuffle boundaries; each stage runs as parallel tasks, one per partition. Fewer shuffles = faster jobs.</div>
+      <button class="btn d-run" id="demo-spark">▶ run the job</button>
+      <div class="sp-stages">
+        <div class="sp-st" id="sp1"><h6>1 · read + filter</h6><div class="sp-tasks"></div></div>
+        <div class="sp-st" id="sp2"><h6>2 · join ⇄</h6><div class="sp-tasks"></div></div>
+        <div class="sp-st" id="sp3"><h6>3 · aggregate</h6><div class="sp-tasks"></div></div>
+      </div><div class="sp-note" id="sp-note">Two shuffles, eighteen tasks — Photon executes each on vectorized batches.</div>`;
+  }
+  $("#d-body").innerHTML = h;
+  wireDemos(id, depth);
+}
+
+/* demos */
+let timers = [];
+function clearT(){ timers.forEach(t => { clearInterval(t); clearTimeout(t); }); timers = []; }
+function wireDemos(id, depth){
+  clearT();
+  if (id === "kafka" && depth >= 4){
+    const colors = ["#1f6feb","#8957e5","#bf8700"];
+    let off = 5;
+    const seed = strip => { for (let i = 0; i < 5; i++){ const m = document.createElement("div"); m.className = "k-msg"; m.style.background = colors[i % 3]; m.textContent = i; strip.appendChild(m); } };
+    ["#ks-l","#ks-1","#ks-2"].forEach(s => seed($(s)));
+    let running = false;
+    $("#demo-kafka").onclick = () => {
+      if (running){ clearT(); running = false; $("#demo-kafka").textContent = "▶ run the log"; return; }
+      running = true; $("#demo-kafka").textContent = "⏸ pause";
+      const push = (sel, o, ci) => { const s = $(sel); if (!s) return; const m = document.createElement("div"); m.className = "k-msg"; m.style.background = colors[ci]; m.textContent = o; s.appendChild(m); if (s.children.length > 12) s.removeChild(s.firstChild); };
+      timers.push(setInterval(() => {
+        const ci = Math.floor(Math.random()*3), o = off++;
+        push("#ks-l", o, ci);
+        timers.push(setTimeout(() => push("#ks-1", o, ci), 280));
+        timers.push(setTimeout(() => push("#ks-2", o, ci), 560));
+        timers.push(setTimeout(() => { const m = $("#k-meta"); if (m) m.textContent = `consumer — committed offset: ${o} · lag: ${Math.max(0, off-1-o)}`; }, 900));
+      }, 850));
+    };
+  }
+  if (id === "delta" && depth >= 3){
+    const state = [], files = [];
+    let fno = 0, ver = -1, step = 0, running = false;
+    const acts = [{a:"add",n:2,t:"batch insert"},{a:"add",n:1,t:"stream append"},{a:"opt",t:"OPTIMIZE"},{a:"add",n:1,t:"late data"},{a:"chk",t:"checkpoint"},{a:"add",n:2,t:"stream append"}];
+    const render = v => { ver = v; const vis = new Set(state[v]);
+      files.forEach(f => f.el.classList.toggle("gone", !vis.has(f.name)));
+      $("#dl-ver").textContent = `version ${v}` + (v < state.length-1 ? " (time travel)" : " (current)"); };
+    const log = (n, d2, c) => { const L = $("#dl-log"); if (!L || L.children.length > 7) return; const e = document.createElement("div"); e.className = "dl-log"; e.innerHTML = `<span style="color:#79c0ff">${n}</span> <span style="color:${c}">${d2}</span>`; L.appendChild(e); };
+    const chip = n => { const F = $("#dl-files"); const e = document.createElement("span"); e.className = "dl-file"; e.textContent = "📄 " + n; F.appendChild(e); files.push({ name:n, el:e }); };
+    $("#demo-delta").onclick = () => {
+      if (running || step >= acts.length) return;
+      running = true;
+      timers.push(setInterval(() => {
+        if (step >= acts.length){ clearT(); running = false; $("#demo-delta").textContent = "done — time-travel with ◀ ▶"; return; }
+        const a = acts[step++], prev = state.length ? state[state.length-1].slice() : [];
+        if (a.a === "add"){ const added = []; for (let i = 0; i < a.n; i++){ const nm = "part-" + String(fno++).padStart(3,"0"); added.push(nm); chip(nm); }
+          state.push(prev.concat(added)); log(`0000${state.length-1}.json`, "add " + added.join(", ") + " · " + a.t, "#56d364"); }
+        else if (a.a === "opt"){ const nm = "part-" + String(fno++).padStart(3,"0"); chip(nm); state.push([nm]);
+          log(`0000${state.length-1}.json`, `remove ${prev.length}, add ${nm} · ${a.t}`, "#f47067"); }
+        else { state.push(prev); log("checkpoint.parquet", "state snapshot @ " + (state.length-1), "#eac54f"); }
+        render(state.length - 1);
+      }, 900));
+    };
+    $("#dl-prev").onclick = () => { if (ver > 0) render(ver - 1); };
+    $("#dl-next").onclick = () => { if (ver < state.length - 1) render(ver + 1); };
+  }
+  if (id === "spark" && depth >= 3){
+    const stages = [{ s:"#sp1", n:8 }, { s:"#sp2", n:6 }, { s:"#sp3", n:4 }];
+    stages.forEach(st => { const box = $(st.s + " .sp-tasks"); box.innerHTML = ""; for (let i = 0; i < st.n; i++){ const t = document.createElement("span"); t.className = "sp-task"; box.appendChild(t); } });
+    let running = false;
+    const notes = ["Stage 1: every task reads & filters its own partition — fully parallel.",
+                   "Shuffle: rows regroup by join key across the cluster — then the join runs.",
+                   "Second shuffle groups by key; stage 3 aggregates and writes."];
+    $("#demo-spark").onclick = () => {
+      if (running) return; running = true;
+      stages.forEach(st => { $(st.s).classList.remove("on","done"); $(st.s).querySelectorAll(".sp-task").forEach(t => t.className = "sp-task"); });
+      let si = 0;
+      (function run(){
+        if (si >= stages.length){ running = false; $("#sp-note").textContent = "Done — 3 stages, 2 shuffles, 18 tasks."; return; }
+        const st = $(stages[si].s); st.classList.add("on");
+        $("#sp-note").textContent = notes[si];
+        const tasks = [...st.querySelectorAll(".sp-task")]; let done = 0;
+        tasks.forEach(t => { const b = 100 + Math.random()*700;
+          timers.push(setTimeout(() => t.classList.add("run"), b));
+          timers.push(setTimeout(() => { t.classList.remove("run"); t.classList.add("ok"); if (++done === tasks.length){ st.classList.remove("on"); st.classList.add("done"); si++; timers.push(setTimeout(run, 250)); } }, b + 400 + Math.random()*500)); });
+      })();
+    };
+  }
+}
+
+/* ═══════ viewport (magnification only) ═══════ */
 let vb = { x:0, y:0, w: worldW };
 const vw = () => wrapEl.clientWidth, vh = () => wrapEl.clientHeight;
-const kNow = () => vw() / vb.w;
-const KMAX = 16;
-function apply(){
-  const h = vb.w * vh() / vw();
-  svg.setAttribute("viewBox", vb.x + " " + vb.y + " " + vb.w + " " + h);
-  const k = kNow();
-  updateLOD(k);
-  const lvl = k < 0.5 ? "L0 · landscape" : k < 2.1 ? "L1 · planes & tools" : k < 4.2 ? "L2 · inside the tools" : k < 6.5 ? "L3 · internals" : "L4 · the logs themselves";
-  document.getElementById("zoomlvl").textContent = "zoom " + k.toFixed(2) + "× — " + lvl;
-  if (typeof updateMinimap === "function" && window.__mmReady) updateMinimap();
-}
-const clampW = w => Math.min(worldW * 1.2, Math.max(vw() / KMAX, w));
+function apply(){ svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.w * vh() / vw()}`); }
+const clampW = w => Math.min(worldW * 1.3, Math.max(vw() / 6, w));
 function zoomAt(px, py, f){
   const r = wrapEl.getBoundingClientRect();
-  const mx = vb.x + (px - r.left) / vw() * vb.w;
-  const my = vb.y + (py - r.top) / vw() * vb.w;
-  const nw = clampW(vb.w / f);
-  const ff = nw / vb.w;
-  vb.x = mx - (mx - vb.x) * ff;
-  vb.y = my - (my - vb.y) * ff;
-  vb.w = nw;
-  apply();
+  const mx = vb.x + (px - r.left) / vw() * vb.w, my = vb.y + (py - r.top) / vw() * vb.w;
+  const nw = clampW(vb.w / f), ff = nw / vb.w;
+  vb.x = mx - (mx - vb.x) * ff; vb.y = my - (my - vb.y) * ff; vb.w = nw; apply();
 }
-wrapEl.addEventListener("wheel", e => {
-  e.preventDefault();
-  if (e.ctrlKey || Math.abs(e.deltaY) >= Math.abs(e.deltaX))
-    zoomAt(e.clientX, e.clientY, Math.pow(1.0018, -e.deltaY * (e.ctrlKey ? 4 : 1)));
-  else { vb.x += e.deltaX * vb.w / vw(); apply(); }
-}, { passive:false });
+wrapEl.addEventListener("wheel", e => { e.preventDefault();
+  if (e.ctrlKey || Math.abs(e.deltaY) >= Math.abs(e.deltaX)) zoomAt(e.clientX, e.clientY, Math.pow(1.0016, -e.deltaY * (e.ctrlKey ? 4 : 1)));
+  else { vb.x += e.deltaX * vb.w / vw(); apply(); } }, { passive:false });
 let drag = null;
-wrapEl.addEventListener("pointerdown", e => { if (e.button !== 0) return; drag = { x:e.clientX, y:e.clientY, vx:vb.x, vy:vb.y }; wrapEl.classList.add("dragging"); });
-window.addEventListener("pointermove", e => {
-  if (!drag) return;
-  vb.x = drag.vx - (e.clientX - drag.x) * vb.w / vw();
-  vb.y = drag.vy - (e.clientY - drag.y) * vb.w / vw();
-  apply();
-});
+wrapEl.addEventListener("pointerdown", e => { if (e.button !== 0 || e.target.closest("#drawer,#levels,.hud,#legend,#tour")) return;
+  drag = { x:e.clientX, y:e.clientY, vx:vb.x, vy:vb.y }; wrapEl.classList.add("dragging"); });
+window.addEventListener("pointermove", e => { if (!drag) return;
+  vb.x = drag.vx - (e.clientX - drag.x) * vb.w / vw(); vb.y = drag.vy - (e.clientY - drag.y) * vb.w / vw(); apply(); });
 window.addEventListener("pointerup", () => { drag = null; wrapEl.classList.remove("dragging"); });
-wrapEl.addEventListener("dblclick", e => { e.preventDefault(); zoomAt(e.clientX, e.clientY, 2.2); });
-const touches = new Map();
-wrapEl.addEventListener("touchstart", e => { for (const t of e.changedTouches) touches.set(t.identifier, t); }, { passive:true });
-wrapEl.addEventListener("touchmove", e => {
-  if (e.touches.length === 2){
-    e.preventDefault();
-    const [a, b] = e.touches;
-    const pa = touches.get(a.identifier), pb = touches.get(b.identifier);
-    if (pa && pb){
-      const d0 = Math.hypot(pa.clientX - pb.clientX, pa.clientY - pb.clientY);
-      const d1 = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
-      if (d0 > 0) zoomAt((a.clientX + b.clientX)/2, (a.clientY + b.clientY)/2, d1 / d0);
-    }
-    touches.set(a.identifier, a); touches.set(b.identifier, b);
-  }
-}, { passive:false });
-wrapEl.addEventListener("touchend", e => { for (const t of e.changedTouches) touches.delete(t.identifier); });
-let flyRAF = null;
+let flyR = null;
 function flyTo(x, y, w){
-  const target = { x, y, w: clampW(w) };
-  const start = { ...vb }, t0 = performance.now(), dur = 550;
-  cancelAnimationFrame(flyRAF);
-  (function stepA(now){
-    const p = Math.min(1, (now - t0) / dur), e = p < 0.5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2)/2;
-    vb.x = start.x + (target.x - start.x) * e;
-    vb.y = start.y + (target.y - start.y) * e;
-    vb.w = start.w + (target.w - start.w) * e;
-    apply();
-    if (p < 1) flyRAF = requestAnimationFrame(stepA);
-  })(t0);
+  const t0 = performance.now(), s = { ...vb }, tg = { x, y, w: clampW(w) };
+  cancelAnimationFrame(flyR);
+  (function st(now){ const p = Math.min(1, (now - t0) / 480), e2 = p < 0.5 ? 2*p*p : 1 - Math.pow(-2*p+2, 2)/2;
+    vb.x = s.x + (tg.x - s.x)*e2; vb.y = s.y + (tg.y - s.y)*e2; vb.w = s.w + (tg.w - s.w)*e2; apply();
+    if (p < 1) flyR = requestAnimationFrame(st); })(t0);
 }
-function fitAll(){ flyTo(-60, -40, worldW * 1.04); }
-document.getElementById("z-in").onclick = () => { const r = wrapEl.getBoundingClientRect(); zoomAt(r.left + vw()/2, r.top + vh()/2, 1.5); };
-document.getElementById("z-out").onclick = () => { const r = wrapEl.getBoundingClientRect(); zoomAt(r.left + vw()/2, r.top + vh()/2, 1/1.5); };
-document.getElementById("z-fit").onclick = fitAll;
-document.addEventListener("keydown", e => { if (e.key === "Escape") fitAll(); });
+function fitAll(){ flyTo(-30, -20, worldW * 1.05); }
+$("#z-in").onclick = () => { const r = wrapEl.getBoundingClientRect(); zoomAt(r.left + vw()/2, r.top + vh()/2, 1.4); };
+$("#z-out").onclick = () => { const r = wrapEl.getBoundingClientRect(); zoomAt(r.left + vw()/2, r.top + vh()/2, 1/1.4); };
+$("#z-fit").onclick = fitAll;
+$("#z-legend").onclick = () => { const L = $("#legend"); L.style.display = L.style.display === "block" ? "none" : "block"; };
+document.addEventListener("keydown", e => { if (e.key === "Escape"){ if (drawer.classList.contains("open")) closeDrawer(); else fitAll(); } });
 window.addEventListener("resize", apply);
-/* minimap */
-const mmWrap = document.getElementById("minimap");
-const worldH = railY + 440;
-const mmW = 212, mmScale = mmW / (worldW + 120), mmH = Math.round((worldH + 80) * mmScale);
-const mm = el("svg", { viewBox: "0 0 " + mmW + " " + mmH, width: mmW, height: mmH }, mmWrap);
-rect(mm, 0, 0, mmW, mmH, "#0a0e14", "none", 4);
-FRAMES.forEach(f => {
-  rect(mm, (f.x + 60) * mmScale, (f.y + 40) * mmScale, f.w * mmScale, f.h * mmScale, blend(f.c, "#0a0e14", 0.28), "none", 2);
-});
-const mmView = rect(mm, 0, 0, 10, 10, "none", "#e6edf3", 1.5, { sw: 1.2 });
-function updateMinimap(){
-  const h = vb.w * vh() / vw();
-  mmView.setAttribute("x", (vb.x + 60) * mmScale);
-  mmView.setAttribute("y", (vb.y + 40) * mmScale);
-  mmView.setAttribute("width", vb.w * mmScale);
-  mmView.setAttribute("height", h * mmScale);
-}
-mmWrap.addEventListener("click", e => {
-  const r = mmWrap.getBoundingClientRect();
-  const wx = (e.clientX - r.left - 6) / mmScale - 60;
-  const wy = (e.clientY - r.top - 6) / mmScale - 40;
-  flyTo(wx - vb.w / 2, wy - (vb.w * vh() / vw()) / 2, vb.w);
-});
 
-document.getElementById("z-legend").onclick = () => {
-  const L = document.getElementById("legend");
-  L.style.display = L.style.display === "none" ? "block" : "none";
-};
-window.__mmReady = true;
-/* deep-link viewport: ?x=&y=&w=  (also used for design screenshots) */
-const qp = new URLSearchParams(location.search);
-if (qp.has("w")){
-  vb = { x: +qp.get("x") || 0, y: +qp.get("y") || 0, w: +qp.get("w") || worldW };
-  apply();
-} else {
-  vb = { x:-260, y:-140, w: worldW * 1.3 }; apply();
-  setTimeout(() => fitAll(), 250);
+/* ═══════ tour ═══════ */
+const TOUR = [
+  ["core","23:41 — a customer taps their card. The core system writes one database row. Nobody touches this record by hand again."],
+  ["connect","CDC reads the change from the database's own log — the source never feels it."],
+  ["kafka","Published as an event, keyed by account — this account's events stay in perfect order."],
+  ["bronze","A sink connector lands it in Bronze: as-produced, lineage stamped. Raw is sacred."],
+  ["silver","Conformed: typed, deduplicated, mapped to the enterprise model — one shared language."],
+  ["gold","Aggregated into the day's metrics and risk features — business meaning, applied last."],
+  ["dbsql","The warehouse serves the updated Gold table — no copies, straight off the lakehouse."],
+  ["powerbi","…and the dashboard tile moves. Seven hops, zero manual steps, full lineage."],
+];
+let ti = -1, tt = null;
+function tourStep(){
+  const [id, cap] = TOUR[ti], p = P[id];
+  if (p) flyTo(p.x - 280, p.y - 220, 1500);
+  document.querySelectorAll(".piece").forEach(x => x.classList.toggle("selected", x.dataset.id === id));
+  $("#tour-step").textContent = `A RECORD'S JOURNEY — ${ti+1} / ${TOUR.length} · ${NODES[id].name.toUpperCase()}`;
+  $("#tour-text").textContent = cap;
+  $("#tour-next").textContent = ti === TOUR.length - 1 ? "finish" : "next ▸";
+  clearTimeout(tt); tt = setTimeout(nextStep, 6500);
 }
-if (qp.has("tour")) setTimeout(startTour, 700);
-if (qp.has("run")) setTimeout(() => {
-  document.querySelectorAll("g.playbtn").forEach(b => b.dispatchEvent(new Event("click")));
-}, 500);
-document.body.setAttribute("data-geo", JSON.stringify({ worldW, worldH, railY,
-  kafka: POS["Confluent Kafka"], delta: POS["Delta Lake"], spark: POS["Spark + Photon"],
-  gold: POS["Gold"], core: POS["Core banking"] }));
+function nextStep(){ ti++; if (ti >= TOUR.length) return endTour(); tourStep(); }
+function startTour(){ closeDrawer(); $("#tour").style.display = "block"; ti = -1; nextStep(); }
+function endTour(){ clearTimeout(tt); $("#tour").style.display = "none"; ti = -1; document.querySelectorAll(".piece.selected").forEach(x => x.classList.remove("selected")); fitAll(); }
+$("#tour-next").addEventListener("click", nextStep);
+$("#tour-end").addEventListener("click", endTour);
+
+/* ═══════ init ═══════ */
+const qp = new URLSearchParams(location.search);
+vb = { x:-30, y:-20, w: worldW * 1.05 }; apply();
+setLevel(qp.has("lv") ? +qp.get("lv") : 1);
+if (qp.has("w")){ vb = { x:+qp.get("x")||0, y:+qp.get("y")||0, w:+qp.get("w")||worldW }; apply(); }
+if (qp.has("node")) select(qp.get("node"), +(qp.get("depth") || 2));
+if (qp.has("run")) setTimeout(() => { const b = $("#demo-kafka") || $("#demo-delta") || $("#demo-spark"); if (b) b.click(); }, 600);
+if (qp.has("tour")) setTimeout(startTour, 600);
+document.body.setAttribute("data-geo", JSON.stringify({ worldW, worldH }));
 })();
 </script>
 </body>
