@@ -520,8 +520,6 @@ function drawNode(parent, x, y, node, zone, W){
       if (col === 1 || i === l2.length - 1){ my += rowH + 8; rowH = 0; }
       col = 1 - col;
     });
-    const aff = lodGroup(parent, 0.7, 2.1);
-    txt(aff, x + W - 20, y + totalH - 14, "⌕ zoom for internals", 10.5, Z.acc, { anchor:"end", w:"600" });
   }
   const deepArea = l2h + special;
   if (deepArea > 60){
