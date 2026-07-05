@@ -105,7 +105,7 @@ function blend(hex, base, a){
 }
 
 /* ═══════ design system ═══════ */
-const BASE = "#131924", BG = "#0a0e14", BORDER = "#2b3444", TXT = "#e6edf3", MUT = "#93a1b3", DIM = "#4d5a6e", GOLD = "#eac54f";
+const BASE = "#131924", BG = "#0a0e14", BORDER = "#2b3444", TXT = "#e6edf3", MUT = "#9db1c7", DIM = "#5a6a82", GOLD = "#eac54f";
 const ZONES = {
   sources:   { acc:"#2dd4bf" }, ingest: { acc:"#58a6ff" }, process: { acc:"#f0883e" },
   serve:     { acc:"#a371f7" }, consume:{ acc:"#3fb950" },
@@ -141,6 +141,12 @@ for (const z in ZONES){
   el("stop", { offset:"45%", "stop-color": c }, g);
   el("stop", { offset:"100%", "stop-color": blend(c, "#000000", 0.45) }, g);
 });
+/* zone glows */
+for (const z in ZONES){
+  const rg = el("radialGradient", { id:"glow-"+z, cx:"50%", cy:"30%", r:"70%" }, defs);
+  el("stop", { offset:"0%", "stop-color": ZONES[z].acc, "stop-opacity":0.10 }, rg);
+  el("stop", { offset:"100%", "stop-color": ZONES[z].acc, "stop-opacity":0 }, rg);
+}
 /* dotted background pattern */
 {
   const pat = el("pattern", { id:"dots", width:70, height:70, patternUnits:"userSpaceOnUse" }, defs);
@@ -189,6 +195,10 @@ function icon(parent, x, y, size, id, color){
   const u = el("use", { href:"#"+id, x, y, width:size, height:size }, parent);
   u.style.color = color;
   return u;
+}
+function iconChip(parent, cx, cy, r, id, acc){
+  rect(parent, cx - r, cy - r, r*2, r*2, blend(acc, BASE, 0.16), blend(acc, BASE, 0.45), r*0.42);
+  icon(parent, cx - r*0.62, cy - r*0.62, r*1.24, id, acc);
 }
 
 const world = el("g", {}, svg);
@@ -421,14 +431,15 @@ rect(bgLayer, -2000, -1500, 14000, 9000, "url(#dots)", null, 0);
 }
 
 /* node card */
-function drawNode(parent, x, y, node, zone){
+function drawNode(parent, x, y, node, zone, W){
+  W = W || W;
   const Z = ZONES[node.journey ? "journey" : zone];
   const titleSize = 22, descSize = 14.5;
   const headH = 46;
-  const descLines = linesOf(node.desc, descSize, NODEW - 40);
+  const descLines = linesOf(node.desc, descSize, W - 40);
   let h = headH + 14 + descLines * descSize * 1.34 + 16;
   const l2 = node.l2 || [];
-  const miniW = (NODEW - 40 - 12) / 2, miniT = 7.4, miniB = 5.8;
+  const miniW = (W - 40 - 12) / 2, miniT = 7.4, miniB = 5.8;
   const miniHs = l2.map(c => 10 + miniT*1.3 + 4 + linesOf(c[1], miniB, miniW - 16) * miniB * 1.35 + 8);
   let l2h = 0;
   if (l2.length){
@@ -438,23 +449,22 @@ function drawNode(parent, x, y, node, zone){
   const special = node.kafka ? 585 : node.delta ? 400 : node.spark ? 345 : 0;
   const totalH = h + l2h + special;
 
-  const card = rect(parent, x, y, NODEW, totalH, "url(#gr-" + (node.journey ? "journey" : zone) + ")", Z.border, 12, { filter:"url(#sh2)" });
+  const card = rect(parent, x, y, W, totalH, "url(#gr-" + (node.journey ? "journey" : zone) + ")", Z.border, 12, { filter:"url(#sh2)" });
   card.classList.add("card","clickable");
   card.style.setProperty("--acc", Z.acc);
-  card.addEventListener("click", () => flyTo(x - 50, y - 50, NODEW + 100));
+  card.addEventListener("click", () => flyTo(x - 50, y - 50, W + 100));
   /* header */
-  el("path", { d:`M${x} ${y+headH} h${NODEW}`, stroke: blend(Z.acc, BASE, 0.25), "stroke-width":1 }, parent);
+  el("path", { d:`M${x} ${y+headH} h${W}`, stroke: blend(Z.acc, BASE, 0.25), "stroke-width":1 }, parent);
   if (node.tone){
     /* medallion cylinder */
     const cy = y + headH/2;
     el("ellipse", { cx:x+26, cy:cy-7, rx:13, ry:4.5, fill:"url(#cyl-"+node.tone+")" }, parent);
     el("path", { d:`M${x+13} ${cy-7} v12 a13 4.5 0 0 0 26 0 v-12`, fill:"url(#cyl-"+node.tone+")" }, parent);
   } else {
-    el("circle", { cx:x+26, cy:y+headH/2, r:14, fill:blend(Z.acc, BASE, 0.16), stroke:blend(Z.acc, BASE, 0.5), "stroke-width":1 }, parent);
-    icon(parent, x+17, y+headH/2-9, 18, node.icon || "i-gear", Z.acc);
+    iconChip(parent, x+26, y+headH/2, 14, node.icon || "i-gear", Z.acc);
   }
   txt(parent, x + 48, y + headH/2 + 7, node.name, titleSize, TXT, { w:"650" });
-  txt(parent, x + 20, y + headH + 14 + descSize, node.desc, descSize, MUT, { maxw: NODEW - 40 });
+  txt(parent, x + 20, y + headH + 14 + descSize, node.desc, descSize, MUT, { maxw: W - 40 });
 
   if (l2.length){
     const g2 = lodGroup(parent, 2.1);
@@ -470,11 +480,11 @@ function drawNode(parent, x, y, node, zone){
       col = 1 - col;
     });
     const aff = lodGroup(parent, 0.55, 2.1);
-    txt(aff, x + NODEW - 20, y + totalH - 14, "⌕ zoom for internals", 10.5, Z.acc, { anchor:"end", w:"600" });
+    txt(aff, x + W - 20, y + totalH - 14, "⌕ zoom for internals", 10.5, Z.acc, { anchor:"end", w:"600" });
   }
-  if (node.kafka) deepKafka(parent, x + 20, y + h + l2h, NODEW - 40, Z);
-  if (node.delta) deepDelta(parent, x + 20, y + h + l2h, NODEW - 40, Z);
-  if (node.spark) deepSpark(parent, x + 20, y + h + l2h, NODEW - 40, Z);
+  if (node.kafka) deepKafka(parent, x + 20, y + h + l2h, W - 40, Z);
+  if (node.delta) deepDelta(parent, x + 20, y + h + l2h, W - 40, Z);
+  if (node.spark) deepSpark(parent, x + 20, y + h + l2h, W - 40, Z);
   return totalH;
 }
 
@@ -706,6 +716,17 @@ DATA.columns.forEach((col, ci) => {
     txt(laneG, gx + 18, y + 14, lane.title.toUpperCase(), 14.5, blend(Z.acc, "#ffffff", 0.75), { ls:"0.12em", w:"700" });
     y += 36;
     let colI = 0, rowMax = 0, rowY = y;
+    if (lane.medallion){
+      const AG = 46, mw = (COLW - PAD - 2*AG - 2*PAD) / 3;
+      let mMax = 0;
+      lane.nodes.forEach((node, ni) => {
+        const nx = gx + ni * (mw + AG);
+        const h = drawNode(laneG, nx, rowY, node, col.id, mw);
+        mMax = Math.max(mMax, h);
+        if (ni < 2) txt(laneG, nx + mw + AG/2, rowY + 30, "→", 26, ZONES[col.id].acc, { anchor:"middle", w:"800" });
+      });
+      y = rowY + mMax + PAD + 14;
+    } else {
     lane.nodes.forEach((node, ni) => {
       const nx = gx + colI * (NODEW + PAD);
       const h = drawNode(laneG, nx, rowY, node, col.id);
@@ -714,6 +735,7 @@ DATA.columns.forEach((col, ci) => {
       if (colI === 2 || ni === lane.nodes.length - 1){ rowY += rowMax + PAD; colI = 0; rowMax = 0; }
     });
     y = rowY + 14;
+    }
   }
   colBottoms.push(y);
   /* low-zoom chip list */
@@ -723,8 +745,7 @@ DATA.columns.forEach((col, ci) => {
   for (const n of chips){
     const w = Math.min(NODEW * 2 + PAD, n.name.length * 16 + 92);
     rect(chipG, gx, cy, w, 58, blend(Z.acc, BASE, 0.07), blend(Z.acc, BORDER, 0.25), 12);
-    el("circle", { cx: gx + 30, cy: cy + 29, r: 13, fill: blend(Z.acc, BASE, 0.18) }, chipG);
-    icon(chipG, gx + 21.5, cy + 20.5, 17, n.icon || "i-gear", Z.acc);
+    iconChip(chipG, gx + 30, cy + 29, 14, n.icon || "i-gear", Z.acc);
     txt(chipG, gx + 52, cy + 37, n.name, 25, blend(Z.acc, "#ffffff", 0.82), { w:"600" });
     cy += 74;
   }
@@ -739,6 +760,7 @@ const maxColBottom = Math.max(...colBottoms) + 40;
   let fx = 140;
   DATA.columns.forEach((col, ci) => {
     const Z = ZONES[col.id];
+    el("ellipse", { cx: fx - 34 + COLW/2, cy: COLTOP + 500, rx: COLW*0.75, ry: 900, fill: "url(#glow-" + col.id + ")" }, bgLayer);
     const frame = rect(bgLayer, fx - 34, COLTOP - 10, COLW, maxColBottom - COLTOP + 60, blend(Z.acc, BG, 0.028), blend(Z.acc, BORDER, 0.28), 20, { filter:"url(#sh)" });
     /* banner */
     rect(bgLayer, fx - 34, COLTOP - 10, COLW, 92, "url(#grb-" + col.id + ")", "none", 20);
@@ -747,13 +769,17 @@ const maxColBottom = Math.max(...colBottoms) + 40;
     icon(bgLayer, fx - 9, COLTOP + 19, 34, col.icon, "#ffffff");
     txt(bgLayer, fx + 48, COLTOP + 30, String(ci + 1).padStart(2,"0") + " · " + col.tag.toUpperCase(), 15, "rgba(255,255,255,0.75)", { ls:"0.16em", w:"700" });
     txt(bgLayer, fx + 48, COLTOP + 64, col.name, 40, "#ffffff", { w:"800" });
-    /* flow connector */
+    /* flow connector: rounded elbow + numbered story label */
     if (ci < DATA.columns.length - 1){
+      const FLOWS = ["① capture", "② refine", "③ publish", "④ decide"];
       const x1 = fx - 34 + COLW, x2 = x1 + GUTTER;
       const ym = COLTOP + 36;
-      const p = el("path", { d:`M${x1+8} ${ym} C ${x1 + GUTTER*0.4} ${ym-26}, ${x2 - GUTTER*0.4} ${ym-26}, ${x2-10} ${ym}`,
-        stroke: blend(Z.acc, "#ffffff", 0.4), "stroke-width":5, fill:"none", "marker-end":"url(#arr)" }, bgLayer);
+      const p = el("path", { d:`M${x1+6} ${ym} h${GUTTER*0.28} q10 0 10 -10 v-14 q0 -10 10 -10 h${GUTTER*0.18} q10 0 10 10 v14 q0 10 10 10 h${GUTTER*0.16}`,
+        stroke: blend(Z.acc, "#ffffff", 0.42), "stroke-width":5, fill:"none", "marker-end":"url(#arr)" }, bgLayer);
       p.classList.add("flowline");
+      const lw = 118;
+      rect(bgLayer, x1 + GUTTER/2 - lw/2, ym - 64, lw, 30, "rgba(10,14,20,0.85)", blend(Z.acc, BORDER, 0.4), 15);
+      txt(bgLayer, x1 + GUTTER/2, ym - 43, FLOWS[ci], 15, blend(Z.acc, "#ffffff", 0.75), { anchor:"middle", w:"700" });
     }
     fx += COLW + GUTTER;
   });
@@ -777,8 +803,7 @@ for (const rail of DATA.rails){
     const rx = 150 + i * (rw + 30), ry = railY + 112;
     const card = rect(rg, rx, ry, rw, 200, "url(#gr-" + rail.id + ")", blend(Z.acc, BORDER, 0.3), 12, { filter:"url(#sh2)" });
     card.classList.add("card"); card.style.setProperty("--acc", Z.acc);
-    el("circle", { cx: rx + 26, cy: ry + 26, r: 13, fill: blend(Z.acc, BASE, 0.18) }, rg);
-    icon(rg, rx + 17.5, ry + 17.5, 17, n.icon, Z.acc);
+    iconChip(rg, rx + 26, ry + 26, 13, n.icon, Z.acc);
     txt(rg, rx + 46, ry + 32, n.name, 18, TXT, { w:"650" });
     txt(rg, rx + 16, ry + 60, n.desc, 12.5, MUT, { maxw: rw - 32 });
     if (n.l2){
@@ -803,9 +828,10 @@ for (const rail of DATA.rails){
     const Z = ZONES.journey;
     const card = rect(world, jx, jy, jw, 310, "url(#gr-journey)", blend(Z.acc, BORDER, 0.35), 14, { filter:"url(#sh)" });
     card.classList.add("card"); card.style.setProperty("--acc", Z.acc);
-    el("circle", { cx: jx + 34, cy: jy + 38, r: 17, fill: blend(Z.acc, BASE, 0.2) }, world);
-    icon(world, jx + 23, jy + 27, 22, j.icon, Z.acc);
+    iconChip(world, jx + 34, jy + 38, 17, j.icon, Z.acc);
     txt(world, jx + 62, jy + 45, j.name, 23, TXT, { w:"700" });
+    el("circle", { cx: jx + jw - 28, cy: jy + 34, r: 13, fill: blend(Z.acc, BASE, 0.25) }, world);
+    txt(world, jx + jw - 28, jy + 40, String(i+1), 15, "#7ee2a8", { anchor:"middle", w:"800" });
     rect(world, jx + 20, jy + 66, jw - 40, 34, blend(Z.acc, BG, 0.08), "none", 8);
     txt(world, jx + 34, jy + 88, j.stats, 13.5, GOLD, { w:"600" });
     const jg = lodGroup(world, 0.5);
@@ -817,6 +843,35 @@ for (const rail of DATA.rails){
       txt(lg, jx + jw/2, jy + 271, j.link.label, 15, "#7ee2a8", { anchor:"middle", w:"650" });
     }
   });
+}
+
+/* legend — reading this map */
+{
+  const lx = worldW - 1240, ly = 60, lw = 1100, lh = 260;
+  rect(world, lx, ly, lw, lh, "rgba(13,20,32,0.92)", BORDER, 16, { filter:"url(#sh)" });
+  txt(world, lx + 26, ly + 40, "READING THIS MAP", 20, TXT, { w:"800", ls:"0.14em" });
+  const zonesRow = [["sources","Sources"],["ingest","Ingest"],["process","Process"],["serve","Serve"],["consume","Consume"],["security","Security"],["governance","Governance"]];
+  let zx = lx + 26;
+  zonesRow.forEach(z => {
+    el("circle", { cx: zx + 8, cy: ly + 70, r: 8, fill: ZONES[z[0]].acc }, world);
+    txt(world, zx + 24, ly + 76, z[1], 16, MUT);
+    zx += z[1].length * 9 + 60;
+  });
+  const fl = el("path", { d: "M" + (lx+26) + " " + (ly+108) + " h70", stroke:"#9fb6d4", "stroke-width":4, fill:"none", "marker-end":"url(#arr)" }, world);
+  fl.classList.add("flowline");
+  txt(world, lx + 112, ly + 113, "data flow — capture → refine → publish → decide", 15, MUT);
+  txt(world, lx + 26, ly + 148, "ZOOM TO DESCEND", 13, DIM, { w:"700", ls:"0.12em" });
+  const ladder = [["L0","landscape"],["L1","planes & tools"],["L2","inside each tool"],["L3","mechanics"],["L4","the logs themselves"]];
+  let lx2 = lx + 26;
+  ladder.forEach((s, i) => {
+    const bw = 34 + s[1].length * 7.2;
+    rect(world, lx2, ly + 162, bw + 36, 30, blend("#58a6ff", BASE, 0.05 + i*0.035), blend("#58a6ff", BORDER, 0.25), 15);
+    txt(world, lx2 + 14, ly + 182, s[0], 13, "#79c0ff", { w:"800" });
+    txt(world, lx2 + 40, ly + 182, s[1], 13, MUT);
+    lx2 += bw + 48;
+    if (i < 4) txt(world, lx2 - 9, ly + 183, "›", 15, DIM, { anchor:"middle" });
+  });
+  txt(world, lx + 26, ly + 226, "Every card is clickable — the map flies to it. Interactive demos live at L3/L4 inside Kafka, Delta Lake and Spark.", 14, DIM, { maxw: lw - 52 });
 }
 
 /* ═══════ viewport ═══════ */
