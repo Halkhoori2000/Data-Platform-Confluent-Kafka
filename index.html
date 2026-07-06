@@ -301,6 +301,10 @@ def("dq","governance","i-check","Data quality","measured, not assumed","Rules at
  [["Rule types","Nulls, formats, reference, uniqueness, reconciliation."],["Quarantine","Failed critical rules hold for review."]]);
 def("mapping","governance","i-map","Mapping & dictionary","business owns meaning","The column matrix workflow: business fills required/name/type — that becomes the dictionary pipelines enforce.",
  [["The matrix","Every column plotted over time, signed off."]]);
+def("jsbx","journey","i-gear","Self-service sandboxes","portal -> IaC -> full parity","Innovation needs a place to be unsafe safely: isolated environments with full platform parity, provisioned end-to-end by Infrastructure as Code — prototypes in days, production untouched.",
+ [["Request -> approve -> provision","A portal request, a governance approval — then automation takes over. No tickets, no hand-built environments."],["Terraform + CI/CD","Every component — ingestion, storage, compute, catalog, networking — is a module deployed by pipeline. Identical every time."],["Template tiers","Lightweight for exploration, standard for pipelines, advanced for AI/ML — right-sized by default."],["Isolation & cost built in","Dedicated clusters, no shared storage; quotas, budget alerts, auto-suspend of idle resources."]]);
+def("jmth","journey","i-clock","How a delivery runs","discovery -> go-live","Every workstream follows the same shape — meaning is agreed before pipelines are built, and nothing goes live without a parallel run.",
+ [["Business discovery","Requirements traced to sources (an RTM) — scope explicit before build starts."],["Architecture & design","Enterprise and reporting data models agreed as artifacts — Silver and Gold implement decisions."],["Data & build","Mappings, Bronze/Silver/Gold pipelines, quality rules, report development."],["Test, then compare","SIT -> UAT -> pre-prod, then a parallel run until the numbers agree — go-live is a comparison, not a leap."]]);
 def("marketplace","governance","i-bag","Catalog & marketplace","data as product","Datasets findable and requestable with owners, docs, and quality scores — shopping, not spelunking.",
  [["Data as product","Owned, documented, scored."]]);
 
@@ -407,9 +411,9 @@ const JOURNEYS = [
     desc:"Manual Excel history standardised into governed gold tables — ADF, notebooks, watermarks.",
     link:{ label:"Open the case study →", href:"https://halkhoori2000.github.io/Historic-Data-Loading/" } },
   { icon:"i-gear", name:"Self-service sandboxes", stats:"portal → Terraform IaC → full parity",
-    desc:"Isolated platform replicas provisioned end-to-end by code — quotas, budgets, auto-suspend built in." },
+    desc:"Isolated platform replicas provisioned end-to-end by code — quotas, budgets, auto-suspend built in.", node:"jsbx" },
   { icon:"i-clock", name:"How a delivery runs", stats:"discovery → design → build → test → go-live",
-    desc:"Models agreed before pipelines; parallel run before cutover — go-live is a comparison, not a leap." },
+    desc:"Models agreed before pipelines; parallel run before cutover — go-live is a comparison, not a leap.", node:"jmth" },
   { icon:"i-coin", name:"A record's journey", stats:"tap → CDC → topic → Bronze → Gold → dashboard",
     desc:"Follow one payment across the map, tool by tool.", tour:true },
 ];
@@ -423,8 +427,9 @@ JOURNEYS.forEach((j, i) => {
   txt(g, jx+60, jy+60, j.stats, 12, "#eac54f", { w:"600" });
   txt(g, jx+16, jy+92, j.desc, 12, MUT);
   if (j.link) txt(g, jx+16, jy+116, j.link.label, 12.5, "#7ee2a8", { w:"650" });
+  if (j.node) txt(g, jx+16, jy+116, "▸ open details", 12.5, "#7ee2a8", { w:"650" });
   if (j.tour) txt(g, jx+16, jy+116, "▶ start the guided tour", 12.5, "#7ee2a8", { w:"650" });
-  g.addEventListener("click", () => { if (j.tour) startTour(); else if (j.link) window.open(j.link.href, "_blank"); });
+  g.addEventListener("click", () => { if (j.tour) startTour(); else if (j.node) openDrawer(j.node, 2); else if (j.link) window.open(j.link.href, "_blank"); });
 });
 
 /* ═══════ edges ═══════ */
@@ -445,29 +450,34 @@ function edge(a, b, opts){
   const p = el("path", { d, fill:"none", stroke: opts.c || "#5f7391", "stroke-width": opts.wd || 2.2, "marker-end":"url(#arr)" }, edgeLayer);
   if (opts.dash) p.setAttribute("stroke-dasharray", "7 6");
   if (opts.lv) p.dataset.lv = opts.lv;
+  if (opts.label && !opts.v){
+    const lx = (A.x + A.w + (opts.mid != null ? opts.mid : (A.x + A.w + B.x)/2)) / 2;
+    const lt = txt(edgeLayer, lx, A.y + A.h/2 + (opts.ao || 0) - 8, opts.label, 10.5, opts.c || "#5f7391", { anchor:"middle", w:"650" });
+    if (opts.lv) lt.dataset.lv = opts.lv;
+  }
   return p;
 }
 const CI = blend(Z.ingest, "#5f7391", 0.5), CP = blend(Z.process, "#5f7391", 0.5), CS = blend(Z.serve, "#5f7391", 0.5);
-edge("core", "connect", { mid: 480, c: CI });
+edge("core", "connect", { mid: 480, c: CI, label:"CDC" });
 edge("cards", "connect", { mid: 468, c: CI, lv:1 });
 edge("payments", "connect", { mid: 456, c: CI, lv:1 });
 edge("channels", "connect", { mid: 444, c: CI, lv:1 });
 edge("connect", "kafka", { v:true, c: CI, lv:1 });
 edge("registry", "kafka", { v:true, dash:true, c: CI, lv:1 });
-edge("kafka", "bronze", { c: CI, wd: 3, mid: 1000 });
+edge("kafka", "bronze", { c: CI, wd: 3, mid: 1000, label:"sink connectors" });
 edge("lending", "adf", { mid: 500, c: CI, lv:1 });
 edge("treasury", "adf", { mid: 488, c: CI, lv:1 });
 edge("crm", "adf", { mid: 476, c: CI, lv:1 });
 edge("excel", "adf", { mid: 464, c: CI });
 edge("partner", "autoloader", { mid: 452, c: CI, lv:1 });
 edge("watermark", "adf", { v:true, dash:true, c: CI, lv:1 });
-edge("adf", "bronze", { c: CI, wd: 3, mid: 1035, bo: 10 });
+edge("adf", "bronze", { c: CI, wd: 3, mid: 1035, bo: 10, label:"watermarked copy" });
 edge("autoloader", "bronze", { c: CI, mid: 1065, bo: 20, lv:1 });
 edge("bronze", "silver", { c: CP, wd: 3.2 });
 edge("silver", "gold", { c: CP, wd: 3.2 });
 edge("delta", "bronze", { v:true, dash:true, c: CP, lv:1 });
 edge("adls", "silver", { v:true, dash:true, c: CP, lv:1 });
-edge("gold", "dbsql", { c: CP, wd: 3 });
+edge("gold", "dbsql", { c: CP, wd: 3, label:"governed marts" });
 edge("gold", "sharing", { c: CP, mid: 2300, bo: 0, lv:1 });
 edge("dbsql", "powerbi", { c: CS, wd: 3 });
 edge("dbsql", "genie", { c: CS, mid: 2790, lv:1 });
