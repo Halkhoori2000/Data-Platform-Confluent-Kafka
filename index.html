@@ -318,13 +318,13 @@ function piece(id, x, y, w, h, opts){
   const ir = 13;
   el("rect", { x:x+12, y:y+h/2-ir, width:ir*2, height:ir*2, rx:8, fill: blend(acc, SURF, 0.22) }, g);
   icon(g, x+12+ir-8.5, y+h/2-8.5, 17, d.icon, acc);
-  txt(g, x+46, y+h/2 - (d.sub ? 3 : -5), d.name, 15.5, TXT, { w:"650" });
-  if (d.sub) txt(g, x+46, y+h/2+14, d.sub, 10.5, blend(acc, "#ffffff", 0.55));
+  txt(g, x+46, y+h/2 - (d.sub ? 4 : -5.5), d.name, 17, TXT, { w:"650" });
+  if (d.sub) txt(g, x+46, y+h/2+15, d.sub, 11.5, blend(acc, "#ffffff", 0.55));
   if (d.deep) txt(g, x+w-10, y+16, d.deepest ? "→ L4" : "→ L3", 10, acc, { anchor:"end", w:"800" });
   g.addEventListener("click", e => { e.stopPropagation(); select(id); });
   return g;
 }
-function label(x, y, s, color){ txt(world, x, y, s.toUpperCase(), 15, color || DIM, { w:"800", ls:"0.16em" }); }
+function label(x, y, s, color){ txt(world, x, y, s.toUpperCase(), 16.5, color || DIM, { w:"800", ls:"0.16em" }); }
 function groupLabel(x, y, s, acc, lv){
   const g = el("g", lv ? { "data-lv": lv } : {}, world);
   el("circle", { cx:x, cy:y-4, r:3.5, fill:acc }, g);
@@ -391,7 +391,7 @@ piece("riskout", 2950, 620, 260, 58, { lv:1 });
 /* rails */
 function rail(y, zone, name, ic, ids){
   const acc = Z[zone];
-  el("rect", { x:100, y, width:3110, height:112, rx:14, fill: blend(acc, BG, 0.04), stroke: blend(acc, "#2b3444", 0.45), "stroke-width":1.2 }, edgeLayer);
+  el("rect", { x:100, y, width:3140, height:112, rx:14, fill: blend(acc, BG, 0.04), stroke: blend(acc, "#2b3444", 0.45), "stroke-width":1.2 }, edgeLayer);
   el("rect", { x:100, y, width:8, height:112, rx:4, fill:acc }, edgeLayer);
   icon(world, 128, y+22, 22, ic, acc);
   txt(world, 162, y+38, name.toUpperCase(), 15, blend(acc,"#ffffff",0.8), { w:"800", ls:"0.1em" });
@@ -706,6 +706,7 @@ if (qp.has("w")){ vb = { x:+qp.get("x")||0, y:+qp.get("y")||0, w:+qp.get("w")||w
 if (qp.has("node")) select(qp.get("node"), +(qp.get("depth") || 2));
 if (qp.has("run")) setTimeout(() => { const b = $("#demo-kafka") || $("#demo-delta") || $("#demo-spark"); if (b) b.click(); }, 600);
 if (qp.has("tour")) setTimeout(startTour, 600);
+if (qp.has("dscroll")) setTimeout(() => { const b = $("#d-body"); if (b) b.scrollTop = 1e6; }, 900);
 document.body.setAttribute("data-geo", JSON.stringify({ worldW, worldH }));
 })();
 </script>
