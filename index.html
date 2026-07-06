@@ -400,7 +400,9 @@ function rail(y, zone, name, ic, ids){
   el("rect", { x:100, y, width:8, height:112, rx:4, fill:acc }, edgeLayer);
   icon(world, 128, y+22, 22, ic, acc);
   txt(world, 162, y+38, name.toUpperCase(), 15, blend(acc,"#ffffff",0.8), { w:"800", ls:"0.1em" });
-  ids.forEach((id, i) => piece(id, 640 + i*640, y+24, 250, 64, { lv: i > 1 ? 1 : 0 }));
+  const rn = ids.length, rpw = 300, rstart = 560, rend = 3180;
+  const rstep = (rend - rstart - rpw) / (rn - 1);
+  ids.forEach((id, i) => piece(id, rstart + i*rstep, y+24, rpw, 64, { lv: i > 1 ? 1 : 0 }));
 }
 rail(1050, "security", "Security", "i-shield", ["entra","keyvault","rbac","network"]);
 rail(1192, "governance", "Governance", "i-book", ["unity","dq","mapping","marketplace"]);
