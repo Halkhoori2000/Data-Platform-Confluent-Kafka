@@ -347,6 +347,84 @@ Object.assign(NODES.powerbi, { deep:3, l3:[
   ["Semantic model","Measures, relationships and hierarchies defined once in DAX; every report reads the same definitions."],
   ["Import vs DirectQuery","Import caches an extract for speed; DirectQuery pushes queries live to the lakehouse for freshness — chosen per dataset."],
   ["Row-level security","Roles filter the model by the viewer's identity — one report, each user sees only their slice."]]});
+/* — deep-dive L3 mechanics for the remaining tools (every node rewards descent) — */
+Object.assign(NODES.registry, { deep:3, l3:[
+  ["Subjects & versions","Each topic's schema is a versioned 'subject'; producers register, consumers fetch the exact version by the ID embedded in every message."],
+  ["Compatibility checks","On register, the new schema is diffed against prior versions under the subject's mode (backward / forward / full) and rejected if it would break existing readers."],
+  ["Wire format","Each message carries a magic byte + 4-byte schema ID then the payload, so consumers deserialize deterministically without guessing."]]});
+Object.assign(NODES.dlt, { deep:3, l3:[
+  ["Declarative graph","You declare tables and their queries; DLT infers the DAG, execution order, parallelism and checkpoints — you never wire them by hand."],
+  ["Expectations","Quality rules run inline: warn (track), drop (quarantine bad rows) or fail the run — with per-run, per-rule metrics recorded."],
+  ["Streaming vs materialized","Streaming tables ingest new data incrementally; materialized views recompute when their inputs change."]]});
+Object.assign(NODES.federation, { deep:3, l3:[
+  ["Foreign catalogs","A connection to an external database surfaces its tables as a read-only foreign catalog inside Unity Catalog."],
+  ["Query pushdown","Filters, projections and some aggregates execute at the source; only the reduced result crosses the wire."],
+  ["Govern in place","Foreign tables get the same grants, lineage and audit as native ones — with no copy of the data."]]});
+Object.assign(NODES.workflows, { deep:3, l3:[
+  ["Task DAG","A job is a graph of tasks (notebook / SQL / DLT / Python) with dependencies, conditional branches and per-task retries."],
+  ["Compute policies","Job clusters spin up per run under policies (size, libraries, tags) and terminate after — you pay only for the run."],
+  ["Repair & observe","Run history, task-level logs, failure/duration alerts, and repair-run to re-execute only the failed tasks."]]});
+Object.assign(NODES.adls, { deep:3, l3:[
+  ["Hierarchical namespace","Directories are real objects with atomic rename/delete — exactly what Spark's commit protocol and ACLs depend on."],
+  ["POSIX-style ACLs","Fine-grained per-directory and per-file ACLs sit under the catalog's governance for defense in depth."],
+  ["Tiering & lifecycle","Hot / cool / archive tiers with lifecycle rules age cold history down automatically to cut cost."]]});
+Object.assign(NODES.bronze, { deep:3, l3:[
+  ["Append-only landing","Raw records land as-is with ingest metadata; idempotent by file/offset so replays never duplicate."],
+  ["Permissive parsing","A rescued-data column captures values that don't fit the expected shape — bad rows are kept, not dropped."],
+  ["The audit anchor","Because Bronze is never mutated, every downstream figure traces back to its exact source bytes."]]});
+Object.assign(NODES.silver, { deep:3, l3:[
+  ["Conform & type","Cast to the canonical schema, standardize codes and units, deduplicate by business key, resolve late-arriving data."],
+  ["Slowly-changing dimensions","Type-1/2 history is tracked where the business needs it; keys are surrogated."],
+  ["The trust boundary","Data-quality rules run here — failures quarantine rather than propagate, so Silver is the 'trustworthy' layer."]]});
+Object.assign(NODES.gold, { deep:3, l3:[
+  ["Dimensional models","Star schemas — conformed dimensions plus fact tables at an explicit grain, shaped for BI query patterns."],
+  ["Business metrics","KPIs, ratios and regulatory fields (IFRS 9 / Basel-style) computed once, consistently, under governance."],
+  ["Serving shapes","Pre-aggregated marts and wide tables tuned for dashboard latency."]]});
+Object.assign(NODES.dq, { deep:3, l3:[
+  ["Rule catalog","Config-driven rules: null/completeness, format, referential, uniqueness, range, reconciliation, freshness, anomaly."],
+  ["Where they run","Inline expectations inside pipelines plus standing monitors on landed tables; pass rates logged over time."],
+  ["Quarantine & alert","Critical failures divert rows to a review table and alert the data's owners — never a silent bad number."]]});
+Object.assign(NODES.entra, { deep:3, l3:[
+  ["Tokens & principals","OAuth tokens for people; service principals / managed identities for pipelines — every actor authenticates."],
+  ["Conditional access","Policies gate on device, location and risk signals before access is granted."],
+  ["Lifecycle via groups","Access flows from group membership, so joiners/movers/leavers are membership changes, not per-resource edits."]]});
+Object.assign(NODES.keyvault, { deep:3, l3:[
+  ["Secret scopes","Pipelines reference secrets by scope + name at runtime; the value never appears in code, config or logs."],
+  ["Keys & rotation","Credentials and encryption keys rotate on a schedule; consumers pick up new versions with no redeploy."],
+  ["Least-privilege reads","Only named identities can read a given secret, and every access is audited."]]});
+Object.assign(NODES.network, { deep:3, l3:[
+  ["Private endpoints","Storage, workspace and services expose private IPs; their public endpoints are disabled."],
+  ["Perimeter","VNet peering, NSGs and firewalls define exactly what can talk to what; egress is allow-listed."],
+  ["Private to on-prem","ExpressRoute / VPN brings source systems in privately — platform traffic never rides the public internet."]]});
+Object.assign(NODES.sharing, { deep:3, l3:[
+  ["Open protocol","A REST protocol issues short-lived URLs to the underlying parquet; recipients read with any compatible client."],
+  ["No data movement","Recipients query the live table, so a share can't go stale or be silently over-retained."],
+  ["Governed & revocable","Shares are catalog objects with grants and audit; access is revoked centrally and instantly."]]});
+Object.assign(NODES.genie, { deep:3, l3:[
+  ["Curated space","Scoped to specific governed tables with descriptions, sample queries and join hints as context."],
+  ["NL → SQL, visibly","The question becomes SQL you can inspect and run; the model reasons over the space's schema, not the open web."],
+  ["Permissions apply","It runs as the asker — no answer returns data they couldn't query directly."]]});
+Object.assign(NODES.semantic, { deep:3, l3:[
+  ["Central definitions","Measures, dimensions and relationships defined once, so every tool computes 'NPL ratio' identically."],
+  ["No drift","Change a definition in one place and it propagates everywhere — no per-dashboard divergence."]]});
+Object.assign(NODES.endpoints, { deep:3, l3:[
+  ["Serving endpoints","Governed REST / JDBC endpoints expose Gold data and models to applications — authenticated and rate-limited."],
+  ["Audited access","Every programmatic read carries an identity and lands in the audit log."]]});
+Object.assign(NODES.riskout, { deep:3, l3:[
+  ["Traceable figures","Each reported number carries lineage back through Gold, Silver and Bronze to the source record."],
+  ["Reproducible as-of","Time travel and versioned tables let a regulator's question be answered against the exact data as-of a date."]]});
+Object.assign(NODES.ds, { deep:3, l3:[
+  ["Governed features","Feature tables live in the catalog; training data is versioned and lineage-tracked."],
+  ["MLOps","Models are registered, versioned and deployed under the same governance as data — auditable from data to prediction."]]});
+Object.assign(NODES.rbac, { deep:3, l3:[
+  ["Row & column control","Row filters and column masks apply per role, evaluated at query time by the catalog."],
+  ["One table, many views","The same physical table serves different rows and columns to different roles — no copies."]]});
+Object.assign(NODES.mapping, { deep:3, l3:[
+  ["The matrix workflow","Every source column plotted over time; the business fills required / final name / data type — that filled matrix IS the dictionary."],
+  ["Config-driven","Mappings live as versioned configuration the pipelines read; changing a mapping never means changing code."]]});
+Object.assign(NODES.marketplace, { deep:3, l3:[
+  ["Discovery","Search, tags, descriptions and lineage make datasets findable; owners and quality scores make them trustworthy."],
+  ["Request & grant","Consumers request access and owners grant it — data as a governed product with a contract."]]});
 
 /* ═══════ layout: individual pieces ═══════ */
 const P = {}, LV1 = new Set();
