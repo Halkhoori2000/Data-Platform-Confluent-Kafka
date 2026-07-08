@@ -105,8 +105,17 @@
   #errbar { display: none; position: absolute; top: 0; left: 0; right: 0; z-index: 60; background: #67060c; color: #ffd7d5; font-size: 0.72rem; padding: 5px 12px; }
   @media (max-width: 600px) {
     #drawer { width: 100%; max-width: 100%; }
-    #levels { gap: 3px; padding: 4px; }
-    #levels button { padding: 6px 8px; font-size: 0.7rem; }
+    header { padding: 8px 12px; }
+    header > div { min-width: 0; }         /* let the title block shrink so GitHub never clips */
+    header .subtitle { display: none; }    /* redundant on mobile (bottom hint + disclosure cover it) */
+    header .btn { flex: 0 0 auto; }
+    /* the level bar is wider than a phone — pin it edge-to-edge and let it
+       scroll horizontally so every level (incl. L4) stays reachable, no clip */
+    #levels { left: 6px; right: 6px; transform: none; justify-content: flex-start;
+              gap: 3px; padding: 4px; max-width: none;
+              overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
+    #levels::-webkit-scrollbar { display: none; }
+    #levels button { flex: 0 0 auto; padding: 6px 8px; font-size: 0.7rem; }
     #levels button b { margin-right: 3px; }
   }
   footer { background: #10151f; border-top: 1px solid #1c2433; text-align: center; padding: 6px; color: var(--dim); font-size: 0.68rem; z-index: 10; }
