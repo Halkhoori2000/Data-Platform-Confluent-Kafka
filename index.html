@@ -45,7 +45,7 @@
   #d-ic svg { width: 22px; height: 22px; }
   #d-name { font-size: 1.02rem; font-weight: 700; }
   #d-zone { font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; }
-  #d-close { margin-left: auto; }
+  #d-close { margin-left: 5px; }
   #d-tabs { display: flex; gap: 6px; padding: 10px 18px; border-bottom: 1px solid #1c2433; }
   #d-tabs button { flex: 1; border: 1px solid var(--border); background: #141a26; color: var(--muted); font-family: inherit; font-size: 0.74rem; padding: 7px 0; border-radius: 8px; cursor: pointer; }
   #d-tabs button.active { background: #1d3a6e; border-color: #2f5eb0; color: #fff; }
@@ -156,7 +156,8 @@
     <div id="d-head">
       <div id="d-ic"></div>
       <div><div id="d-name"></div><div id="d-zone"></div></div>
-      <button class="hudbtn" id="d-close">✕</button>
+      <button class="hudbtn" id="d-link" title="Copy a link to this exact view" style="margin-left:auto">🔗</button>
+      <button class="hudbtn" id="d-close" title="Close (Esc)">✕</button>
     </div>
     <div id="d-tabs">
       <button data-d="2">L2 · inside</button>
@@ -661,6 +662,12 @@ function select(id, depth){
 }
 function closeDrawer(){ drawer.classList.remove("open"); document.querySelectorAll(".piece.selected").forEach(p => p.classList.remove("selected")); selected = null; syncURL(); }
 $("#d-close").addEventListener("click", closeDrawer);
+$("#d-link").addEventListener("click", async () => {
+  const btn = $("#d-link");
+  try { await navigator.clipboard.writeText(location.href); }
+  catch(_){ /* clipboard blocked — ignore */ }
+  const old = btn.textContent; btn.textContent = "✓"; setTimeout(() => { btn.textContent = old; }, 1200);
+});
 document.querySelectorAll("#d-tabs button").forEach(b => b.addEventListener("click", () => { if (!b.disabled && selected) openDrawer(selected, +b.dataset.d); }));
 
 function openDrawer(id, depth){
