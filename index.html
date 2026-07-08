@@ -237,22 +237,22 @@ def("core","sources","i-db","Core banking","system of record","Accounts, custome
 def("cards","sources","i-card","Cards","CB + IB portfolios","Issuing and acquiring, conventional and Islamic portfolios — batch positions plus real-time authorization events.",
  [["Two books","Conventional and Islamic keep different fields — profit rate, not interest rate."],["Mixed shapes","Monthly files and event streams from one domain."]]);
 def("payments","sources","i-coin","Payments","event-native","Transfers, clearing, gateway events — a payment is a sequence of events; streaming fits it exactly.",
- [["Event-native","Initiated, cleared, settled — each step an event on the stream."]]);
+ [["Event-native","Initiated, cleared, settled — each step an event on the stream."],["Idempotency","Every payment carries a unique key, so retries and network replays never double-post — non-negotiable for money movement."]]);
 def("lending","sources","i-house","Lending & mortgages","batch extracts","Originations, servicing, collateral — slow-moving but every field feeds risk models.",
- [["Quality beats speed","Positions move monthly; correctness matters more than latency."]]);
+ [["Quality beats speed","Positions move monthly; correctness matters more than latency."],["Reference-heavy","Product terms, rates, collateral and covenants must join in — the record only makes sense with its reference data."]]);
 def("treasury","sources","i-bars","Treasury & finance","period-end","Positions, GL, regulatory ledgers — the calendar closes them; watermarked batches follow.",
- [["Period-end world","The GL closes on a calendar; ingestion follows it."]]);
+ [["Period-end world","The GL closes on a calendar; ingestion follows it."],["Reconciled to the cent","Feeds regulatory and capital reporting — every figure must reconcile exactly, so quality gates are strict."]]);
 def("channels","sources","i-phone","Digital channels","behavioural events","Mobile and web activity — millions of small events; partitioned streams absorb them.",
- [["Volume over size","High-rate small events — built for streaming."]]);
+ [["Volume over size","High-rate small events — built for streaming."],["Sessionized","Clicks and views are stitched into sessions and journeys — behaviour, not just counts."]]);
 def("crm","sources","i-person","CRM & operations","context data","Customer interactions, cases, campaigns — joins onto transactions to explain the why.",
- [["The why","Context that gives transactions their meaning."]]);
+ [["The why","Context that gives transactions their meaning."],["Consent-aware","Outreach and marketing honour consent and contactability flags carried with the customer record."]]);
 def("risk","sources","i-shield","Risk systems","lineage-critical","Ratings, provisions, exposures — both a source and the consumer that cares most about lineage.",
- [["Source and consumer","Feeds data in, consumes Gold — lineage non-negotiable."]]);
+ [["Source and consumer","Feeds data in, consumes Gold — lineage non-negotiable."],["As-of correctness","Needs data as-of a reporting date; time travel and versioned tables answer 'what did we know then?'"]]);
 def("excel","sources","i-file","Manual Excel history","535 sheets · 8 systems","Years of monthly files, exported by hand, drifting in shape — the problem the Historic Data Loading delivery solved on this platform.",
  [["535 sheets · 41+ GB","Headers under title rows, columns renaming across years, corrupt workbooks."],["Solved here","Metadata-driven pipeline — see the journey panel below."]],
  { link:{ label:"Open the HDL case study →", href:"https://halkhoori2000.github.io/Historic-Data-Loading/" } });
 def("partner","sources","i-share","Partner feeds","their schedule","Bureaus, processors, market data — files and APIs arriving on their own schedules.",
- [["Arrival-driven","The platform reacts to files; it never waits."]]);
+ [["Arrival-driven","The platform reacts to files; it never waits."],["Contracted schemas","Feeds arrive on agreed layouts and SLAs; drift is caught at ingestion against the contract."]]);
 def("connect","ingest","i-plug","Kafka Connect","CDC + JDBC connectors","The bridge between databases and streams — configuration, not code. Source connectors capture changes in; sink connectors deliver topics onward.",
  [["CDC connectors","Read the database's own log — every change becomes an event."],["JDBC connectors","No log access? Incremental queries by key/timestamp."],["Workers & tasks","Dead tasks reschedule; dead workers hand over."],["Secrets & promotion","Configs reference a vault; promote UAT → PROD like code."]]);
 def("kafka","ingest","i-stream","Confluent Kafka","topics · partitions · clusters","The streaming backbone: real-time change events, organized for isolation and reuse. The deepest piece on the map — L3 goes inside a cluster, L4 inside a partition.",
