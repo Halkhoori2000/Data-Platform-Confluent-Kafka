@@ -64,6 +64,17 @@
   .k-strip { display: flex; gap: 3px; background: #0b0f16; border: 1px solid #232c3d; border-radius: 6px; padding: 4px; min-height: 34px; overflow: hidden; }
   .k-msg { width: 26px; height: 24px; border-radius: 4px; color: #fff; font-size: 0.6rem; font-weight: 700; display: flex; align-items: center; justify-content: center; font-family: 'SF Mono', monospace; flex: 0 0 auto; animation: pop 0.25s ease; }
   @keyframes pop { from { transform: scale(0.3); opacity: 0; } }
+  .med-flow { display: flex; gap: 6px; align-items: stretch; margin: 10px 0; }
+  .med-col { flex: 1; background: #0b0f16; border: 1px solid #232c3d; border-radius: 8px; padding: 8px; min-width: 0; }
+  .med-col h6 { font-size: 0.62rem; color: var(--muted); margin-bottom: 6px; white-space: nowrap; }
+  .med-rows { display: flex; flex-direction: column; gap: 5px; }
+  .med-row { display: flex; flex-wrap: wrap; gap: 3px; background: #141a26; border: 1px solid #232c3d; border-radius: 5px; padding: 4px; animation: pop 0.25s ease; }
+  .med-row.dup { opacity: 0.4; border-style: dashed; }
+  .med-chip { font-size: 0.56rem; font-family: 'SF Mono', monospace; color: var(--muted); background: #0b0f16; border-radius: 3px; padding: 1px 4px; }
+  .med-chip b { color: #8aa0bd; }
+  .med-chip.ok b { color: var(--green); }
+  .med-arr { align-self: center; color: var(--orange); font-size: 0.85rem; }
+  .med-note { font-size: 0.68rem; color: var(--muted); margin-top: 8px; }
   .k-meta { font-size: 0.7rem; color: var(--green); font-family: 'SF Mono', monospace; margin-top: 6px; }
   .dl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .dl-pane { background: #0b0f16; border: 1px solid #232c3d; border-radius: 8px; padding: 8px; min-height: 130px; }
@@ -276,7 +287,7 @@ def("adls","process","i-db","ADLS Gen2","the physical ground","Hierarchical, che
  [["Real directories","Atomic renames — what engines and ACLs need."],["Zones as paths","Per system, per period, governed."]]);
 def("delta","process","i-delta","Delta Lake","ACID on the lake","A transaction log makes files behave like a database: atomic commits, time travel, schema enforcement. L3 opens the log itself — with a live demo.",
  [["ACID on object storage","Complete commits or nothing."],["Time travel","Every version queryable — audit and rollback free."],["Schema enforcement","Drift becomes a decision, not an accident."],["Stream + batch","One table serves both, safely serialized."]],
- { deep:3 });
+ { deep:3, deepest:4 });
 def("dbsql","serve","i-table","Databricks SQL","warehouse on the lake","Warehouse-grade SQL directly on Gold — elastic, cached, governed by the same catalog as the pipelines.",
  [["Elastic warehouses","Spin up on demand, suspend when idle."],["Photon + caching","Dashboard queries feel interactive."],["Catalog-governed","Analysts see exactly what they're granted."]]);
 def("semantic","serve","i-book","Semantic layer","one truth","Business definitions in one place — every tool computes 'NPL ratio' the same way.",
@@ -657,7 +668,7 @@ function openDrawer(id, depth){
     const dep = +b.dataset.d;
     b.disabled = dep > maxDepth(id);
     b.classList.toggle("active", dep === depth);
-    if (dep === 3) b.textContent = id === "delta" ? "L3 · the log" : id === "spark" ? "L3 · a job runs" : "L3 · mechanics";
+    if (dep === 3) b.textContent = id === "delta" ? "L3 · the log" : id === "spark" ? "L3 · a job runs" : id === "silver" ? "L3 · the flow" : "L3 · mechanics";
   });
   const esc = s => String(s).replace(/</g,"&lt;");
   let h = `<div class="d-desc">${esc(d.desc)}</div>`;
@@ -691,6 +702,30 @@ function openDrawer(id, depth){
       <div class="dl-grid"><div class="dl-pane"><h6>data files</h6><div id="dl-files"></div></div>
       <div class="dl-pane"><h6>_delta_log/</h6><div id="dl-log"></div></div></div>
       <div class="dl-nav"><button class="hudbtn" id="dl-prev">◀</button><button class="hudbtn" id="dl-next">▶</button><span id="dl-ver">version — (time travel after running)</span></div>`;
+  }
+  if (depth >= 4 && id === "delta"){
+    h += `<div class="d-sec">L4 · INSIDE A SINGLE COMMIT</div>
+      <div class="d-note">Each commit is one JSON file of <b>actions</b>. Replay every commit in order and you reconstruct the table's exact state — that's the whole engine, nothing more.</div>
+      <div class="d-cards">
+        <div class="d-card"><h5 style="color:${acc}">add / remove</h5><p>{"add":{path, size, stats:{min,max,nullCount}}} and {"remove":{path}} — the file-level diff that this version applied.</p></div>
+        <div class="d-card"><h5 style="color:${acc}">protocol &amp; metaData</h5><p>Reader/writer protocol versions + the schema, partitioning and table properties — so any engine reads it correctly.</p></div>
+        <div class="d-card"><h5 style="color:${acc}">commitInfo</h5><p>Operation (WRITE/MERGE/OPTIMIZE), who, when and metrics — a per-version audit trail baked into the log.</p></div>
+        <div class="d-card"><h5 style="color:${acc}">stats → data skipping</h5><p>Per-file min/max/nullCount in the add action let a query skip whole files without opening them.</p></div>
+      </div>
+      <div class="d-note" style="margin-top:12px"><b>Checkpoints &amp; vacuum:</b> every ~10 commits Delta writes a Parquet checkpoint — the consolidated state — so readers replay from it instead of from commit zero. VACUUM later deletes data files no live version still references.</div>`;
+  }
+  if (depth >= 3 && id === "silver"){
+    h += `<div class="d-sec">L3 · WATCH A RECORD FLOW  BRONZE → SILVER → GOLD</div>
+      <div class="d-note">The same card transaction as it's refined — landed raw, conformed to the model, then aggregated into a metric. This is the medallion path the historic-data delivery ran at scale.</div>
+      <button class="btn d-run" id="demo-med">▶ run the flow</button>
+      <div class="med-flow">
+        <div class="med-col" id="mc-bronze"><h6>🥉 Bronze</h6><div class="med-rows"></div></div>
+        <div class="med-arr">→</div>
+        <div class="med-col" id="mc-silver"><h6>🥈 Silver</h6><div class="med-rows"></div></div>
+        <div class="med-arr">→</div>
+        <div class="med-col" id="mc-gold"><h6>🥇 Gold</h6><div class="med-rows"></div></div>
+      </div>
+      <div class="med-note" id="med-note">Press ▶ to refine one record.</div>`;
   }
   if (depth >= 3 && id === "spark"){
     h += `<div class="d-sec">L3 · A JOB EXECUTING</div>
@@ -755,6 +790,29 @@ function wireDemos(id, depth){
     };
     $("#dl-prev").onclick = () => { if (ver > 0) render(ver - 1); };
     $("#dl-next").onclick = () => { if (ver < state.length - 1) render(ver + 1); };
+  }
+  if (id === "silver" && depth >= 3){
+    const btn = $("#demo-med");
+    if (btn){
+      const B=$("#mc-bronze .med-rows"), S=$("#mc-silver .med-rows"), G=$("#mc-gold .med-rows"), note=$("#med-note");
+      const chip=(k,v,ok)=>`<span class="med-chip${ok?" ok":""}"><b>${k}</b> ${v}</span>`;
+      let running=false;
+      btn.onclick=()=>{
+        if(running) return; running=true; B.innerHTML=S.innerHTML=G.innerHTML="";
+        const raw='<div class="med-row">'+chip("A/C No",'" 12345 "')+chip("Amt",'"1,234.56"')+chip("Dt",'"31/12/23"')+chip("Ccy",'"aed"')+'</div>';
+        B.innerHTML=raw+raw.replace('med-row','med-row dup');
+        note.textContent="Bronze: landed as-produced — a duplicate row, number-as-text, dd/mm/yy date, lowercase code.";
+        timers.push(setTimeout(()=>{
+          S.innerHTML='<div class="med-row">'+chip("account_number","12345",1)+chip("amount","1234.56",1)+chip("as_of_date","2023-12-31",1)+chip("currency","AED",1)+'</div>';
+          note.textContent="Silver: deduplicated, typed, date → ISO-8601, code standardized, mapped to the enterprise model.";
+        },1100));
+        timers.push(setTimeout(()=>{
+          G.innerHTML='<div class="med-row">'+chip("day","2023-12-31")+chip("txn_count","1")+chip("gross","1234.56")+chip("ifrs9_stage","1",1)+'</div>';
+          note.textContent="Gold: folded into the day's metrics; IFRS 9 stage computed under governance.  ✓ done";
+          running=false;
+        },2200));
+      };
+    }
   }
   if (id === "spark" && depth >= 3){
     const stages = [{ s:"#sp1", n:8 }, { s:"#sp2", n:6 }, { s:"#sp3", n:4 }];
