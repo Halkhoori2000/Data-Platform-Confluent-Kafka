@@ -98,6 +98,18 @@
   #legend .zs span { font-size: 0.68rem; color: var(--muted); display: inline-flex; align-items: center; gap: 5px; }
   #legend .zs i { width: 8px; height: 8px; border-radius: 50%; }
   #legend .n { font-size: 0.66rem; color: var(--dim); line-height: 1.5; }
+  #about-bg { display: none; position: absolute; inset: 0; z-index: 50; background: rgba(6,9,14,0.55); }
+  #about { display: none; position: absolute; z-index: 51; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    width: 470px; max-width: 92vw; max-height: 86vh; overflow-y: auto;
+    background: #10151f; border: 1px solid var(--border); border-radius: 14px; padding: 22px 24px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.55); }
+  #about h3 { font-size: 1.02rem; font-weight: 700; margin-bottom: 12px; }
+  #about p { font-size: 0.8rem; color: var(--muted); line-height: 1.62; margin-bottom: 14px; }
+  #about ul { list-style: none; margin: 0 0 14px; padding: 0; }
+  #about li { font-size: 0.78rem; color: var(--muted); line-height: 1.55; padding: 8px 0; border-top: 1px solid #1c2433; }
+  #about li b { color: var(--text); font-weight: 650; }
+  #about .ab-conf { font-size: 0.72rem; color: #c8b1f5; background: rgba(163,113,247,0.08); border: 1px solid #322a52; border-radius: 8px; padding: 9px 11px; line-height: 1.5; }
+  #about-x { position: absolute; top: 12px; right: 14px; min-width: 30px; height: 30px; padding: 0; }
   #tour { display: none; position: absolute; left: 50%; transform: translateX(-50%); bottom: 20px; z-index: 45;
     width: min(600px, 92%); background: rgba(13,20,32,0.96); border: 1px solid #2f9e57; border-radius: 13px; padding: 14px 18px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
   #tour-step { font-size: 0.66rem; color: #56d364; font-weight: 700; letter-spacing: 0.1em; margin-bottom: 5px; }
@@ -144,6 +156,7 @@
     <button class="hudbtn" id="z-out">－</button>
     <button class="hudbtn" id="z-fit">fit</button>
     <button class="hudbtn" id="z-legend">legend</button>
+    <button class="hudbtn" id="z-about" title="About this model — what it is & how to explore">?</button>
   </div>
   <div class="hud bl">drag to pan · scroll to magnify · click a piece for details</div>
   <div id="legend">
@@ -160,6 +173,19 @@
     <div id="tour-step"></div>
     <div id="tour-text"></div>
     <div style="display:flex;gap:8px"><button class="hudbtn" id="tour-next">next ▸</button><button class="hudbtn" id="tour-end">✕ end</button></div>
+  </div>
+  <div id="about-bg"></div>
+  <div id="about" role="dialog" aria-label="About this model">
+    <button class="hudbtn" id="about-x" title="Close (Esc)">✕</button>
+    <h3>About this model</h3>
+    <p>An interactive, fully-generalized model of a real enterprise banking data platform — how dozens of source systems, event streams, and years of files become governed, queryable data products. It reads like a real reference architecture, and you choose how deep to go.</p>
+    <ul>
+      <li><b>L0–L4</b> set the depth — L0 overview, L1 the full estate, then L2–L4 go <i>inside</i> a clicked piece (keys <b>0–4</b> jump levels).</li>
+      <li><b>Click any piece</b> to open its detail panel; the security &amp; governance rails run underneath everything.</li>
+      <li><b>▶</b> pieces have a <b>live demo</b> — Kafka's commit log, Delta's transaction log, a Spark job, and a record refining Bronze → Silver → Gold.</li>
+      <li><b>Drag</b> to pan, <b>scroll</b> to zoom, <b>fit</b> to reset — or take the guided tour from the “A record’s journey” card.</li>
+    </ul>
+    <div class="ab-conf">🔒 Ideas, architecture, and technology only — no institution names, internal systems, configurations, or data appear anywhere.</div>
   </div>
   <div id="drawer">
     <div id="d-head">
@@ -909,8 +935,13 @@ $("#z-in").onclick = () => { const r = wrapEl.getBoundingClientRect(); zoomAt(r.
 $("#z-out").onclick = () => { const r = wrapEl.getBoundingClientRect(); zoomAt(r.left + vw()/2, r.top + vh()/2, 1/1.4); };
 $("#z-fit").onclick = fitAll;
 $("#z-legend").onclick = () => { const L = $("#legend"); L.style.display = L.style.display === "block" ? "none" : "block"; };
+function showAbout(on){ const d = on ? "block" : "none"; $("#about").style.display = d; $("#about-bg").style.display = d; }
+const aboutOpen = () => $("#about").style.display === "block";
+$("#z-about").onclick = () => showAbout(!aboutOpen());
+$("#about-x").onclick = () => showAbout(false);
+$("#about-bg").onclick = () => showAbout(false);
 document.addEventListener("keydown", e => {
-  if (e.key === "Escape"){ if (drawer.classList.contains("open")) closeDrawer(); else fitAll(); return; }
+  if (e.key === "Escape"){ if (aboutOpen()) return showAbout(false); if (drawer.classList.contains("open")) closeDrawer(); else fitAll(); return; }
   // number keys 0–4 jump levels (2–4 open the current tool at that depth)
   if (/^[0-4]$/.test(e.key) && !e.metaKey && !e.ctrlKey && !e.altKey){ e.preventDefault(); setLevel(+e.key); }
 });
@@ -951,6 +982,7 @@ if (qp.has("w")){ vb = { x:+qp.get("x")||0, y:+qp.get("y")||0, w:+qp.get("w")||w
 if (qp.has("node")) select(qp.get("node"), +(qp.get("depth") || 2));
 if (qp.has("run")) setTimeout(() => { const b = $("#demo-kafka") || $("#demo-delta") || $("#demo-spark") || $("#demo-med"); if (b) b.click(); }, 600);
 if (qp.has("legend")) $("#legend").style.display = "block";
+if (qp.has("about")) showAbout(true);
 if (qp.has("tour")) setTimeout(startTour, 600);
 if (qp.has("dscroll")) setTimeout(() => { const b = $("#d-body"); if (b) b.scrollTop = 1e6; }, 900);
 document.body.setAttribute("data-geo", JSON.stringify({ worldW, worldH }));
