@@ -950,6 +950,7 @@ setLevel(qp.has("lv") ? +qp.get("lv") : 1);
 if (qp.has("w")){ vb = { x:+qp.get("x")||0, y:+qp.get("y")||0, w:+qp.get("w")||worldW }; apply(); }
 if (qp.has("node")) select(qp.get("node"), +(qp.get("depth") || 2));
 if (qp.has("run")) setTimeout(() => { const b = $("#demo-kafka") || $("#demo-delta") || $("#demo-spark") || $("#demo-med"); if (b) b.click(); }, 600);
+if (qp.has("legend")) $("#legend").style.display = "block";
 if (qp.has("tour")) setTimeout(startTour, 600);
 if (qp.has("dscroll")) setTimeout(() => { const b = $("#d-body"); if (b) b.scrollTop = 1e6; }, 900);
 document.body.setAttribute("data-geo", JSON.stringify({ worldW, worldH }));
