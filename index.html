@@ -154,7 +154,7 @@
       <span><i style="background:#3fb950"></i>Consume</span><span><i style="background:#f47067"></i>Security</span>
       <span><i style="background:#d2a8ff"></i>Governance</span>
     </div>
-    <div class="n">Solid arrows = data flow · dashed = metadata / control. L0–L1 change the canvas; L2–L4 deepen the panel for the selected piece (Kafka goes deepest).</div>
+    <div class="n">Solid arrows = data flow · dashed = metadata / control. L0–L1 change the canvas; L2–L4 deepen the panel for the selected piece (Kafka goes deepest). Badges: <b style="color:#9ecbff">→ L3/L4</b> deeper detail · <b style="color:#9ecbff">▶</b> live demo inside.</div>
   </div>
   <div id="tour">
     <div id="tour-step"></div>
@@ -449,6 +449,7 @@ Object.assign(NODES.marketplace, { deep:3, l3:[
 
 /* ═══════ layout: individual pieces ═══════ */
 const P = {}, LV1 = new Set();
+const DEMOS = new Set(["kafka", "delta", "spark", "silver"]);  // pieces with a runnable live demo inside
 function piece(id, x, y, w, h, opts){
   if (opts && opts.lv === 1) LV1.add(id);
   opts = opts || {};
@@ -464,7 +465,8 @@ function piece(id, x, y, w, h, opts){
   icon(g, x+12+ir-8.5, y+h/2-8.5, 17, d.icon, acc);
   txt(g, x+46, y+h/2 - (d.sub ? 4 : -5.5), d.name, 17, TXT, { w:"650" });
   if (d.sub) txt(g, x+46, y+h/2+15, d.sub, 11.5, blend(acc, "#ffffff", 0.55));
-  if (d.deep) txt(g, x+w-10, y+16, d.deepest ? "→ L4" : "→ L3", 10, acc, { anchor:"end", w:"800" });
+  if (d.deep){ const dm = DEMOS.has(id);
+    txt(g, x+w-10, y+16, (dm ? "▶ " : "→ ") + (d.deepest ? "L4" : "L3"), 10, dm ? blend(acc, "#ffffff", 0.28) : acc, { anchor:"end", w:"800" }); }
   g.addEventListener("click", e => { e.stopPropagation(); select(id); });
   return g;
 }
