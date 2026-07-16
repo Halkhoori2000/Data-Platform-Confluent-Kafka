@@ -977,7 +977,8 @@ $("#z-in").onclick = () => { const r = wrapEl.getBoundingClientRect(); zoomAt(r.
 $("#z-out").onclick = () => { const r = wrapEl.getBoundingClientRect(); zoomAt(r.left + vw()/2, r.top + vh()/2, 1/1.4); };
 $("#z-fit").onclick = fitAll;
 $("#z-legend").onclick = () => { const L = $("#legend"); L.style.display = L.style.display === "block" ? "none" : "block"; };
-function showAbout(on){ const d = on ? "block" : "none"; $("#about").style.display = d; $("#about-bg").style.display = d; }
+function showAbout(on){ const d = on ? "block" : "none"; $("#about").style.display = d; $("#about-bg").style.display = d;
+  if (!on) { try { localStorage.setItem("edp-about-seen", "1"); } catch(_){} } }  // remember dismissal so it never nags again
 const aboutOpen = () => $("#about").style.display === "block";
 $("#z-about").onclick = () => showAbout(!aboutOpen());
 $("#about-x").onclick = () => showAbout(false);
@@ -1025,7 +1026,11 @@ if (qp.has("w")){ vb = { x:+qp.get("x")||0, y:+qp.get("y")||0, w:+qp.get("w")||w
 if (qp.has("node")) select(qp.get("node"), +(qp.get("depth") || 2));
 if (qp.has("run")) setTimeout(() => { const b = $("#demo-kafka") || $("#demo-delta") || $("#demo-spark") || $("#demo-med"); if (b) b.click(); }, 600);
 if (qp.has("legend")) $("#legend").style.display = "block";
+let aboutSeen = true; try { aboutSeen = !!localStorage.getItem("edp-about-seen"); } catch(_){}
 if (qp.has("about")) showAbout(true);
+// first visit (no deep-link into specific content) → auto-open the orientation once
+else if (!aboutSeen && !qp.has("node") && !qp.has("tour") && !qp.has("run") && !qp.has("legend"))
+  setTimeout(() => showAbout(true), 450);
 if (qp.has("tour")) setTimeout(startTour, 600);
 if (qp.has("dscroll")) setTimeout(() => { const b = $("#d-body"); if (b) b.scrollTop = 1e6; }, 900);
 document.body.setAttribute("data-geo", JSON.stringify({ worldW, worldH }));
